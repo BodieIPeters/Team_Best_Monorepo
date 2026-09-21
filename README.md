@@ -13,3 +13,7 @@ Beyla Ruzindana
 Vitus Kaleo-Bioh
 
 Bodie Peters
+
+
+Team Contract:
+https://github.com/BodieIPeters/Team_Best_Monorepo/blob/main/TEAM_CONTRACT.md
