@@ -16,4 +16,4 @@ Bodie Peters
 
 
 Team Contract:
-https://github.com/BodieIPeters/Team_Best_Monorepo/blob/main/TEAM_CONTRACT.md
+https://github.com/BodieIPeters/Team_Best_Monorepo/blob/main/docs/TEAM_CONTRACT.md
