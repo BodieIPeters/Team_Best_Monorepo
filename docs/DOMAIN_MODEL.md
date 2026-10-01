@@ -39,4 +39,4 @@
 - An Event belongs to one Church and optionally to one Ministry
 
 
-![Domain Model](Domain_Model_Screenshot.png)
+![Domain Model](./images/Domain_Model_Screenshot.png)
