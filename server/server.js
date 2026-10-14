@@ -1,3 +1,5 @@
+// Not used in our mockdatabase
+
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const morgan = require('morgan');
