@@ -29,30 +29,35 @@ A lot of college students, especially freshmen, have a hard time finding a churc
 
 ### 3.1 Functional Requirements
 
-1. As a student, I can see a welcome screen when I open the app, so that I know what the app is for before I start.
-2. As a student, I can choose to sign up or skip sign-up, so that I can try the app before committing to an account.
+**IMPLEMENTED USER STORIES:**
 3. As a student, I can answer preference questions (like denomination and worship style), so that the app can suggest churches that fit me.
 4. As a student, I can see a list of suggested churches, so that I know where to start looking.
 5. As a student, I can view details about a church (name, address, service times), so that I can decide if I want to visit.
-6. As a student, I can rate or leave feedback on a church, so that other students can benefit from my experience.
-7. As a student who has committed to a church, I can get reminders or updates, so that I stay active there.
-8. As a student, I can save my results if I signed up, so that I don't lose my preferences.
 9. As a student, I can search for a church by name, so that I can find one I already know about.
+13. As a student, I can save a church to a favorites list, so that I can easily find it again later.
+14. As a student, I can remove a church from my favorites, so that my list stays relevant to me.
+18. As a student, I can write a comment about a church I've visited, so that I can help other students decide.
+24. As a student, I can log out of my account, so that my info stays private on shared devices.
+
+**USER STORIES PARTIALLY IMPLEMENTED:**
+1. As a student, I can see a welcome screen when I open the app, so that I know what the app is for before I start.
+2. As a student, I can choose to sign up or skip sign-up, so that I can try the app before committing to an account.
+6. As a student, I can rate or leave feedback on a church, so that other students can benefit from my experience.
+8. As a student, I can save my results if I signed up, so that I don't lose my preferences.
+17. As a student, I can see other students' ratings and comments, so that I can learn from their experience.
+22. As a student, I can create an account with my email, so that I can save my results across devices.
+23. As a student, I can log in to my account, so that I can see my saved churches again.
+
+**USER STORIES YET TO BE IMPLEMENTED:**
+7. As a student who has committed to a church, I can get reminders or updates, so that I stay active there.
 10. As a student, I can filter suggestions by distance from campus, so that I only see churches I can realistically get to.
 11. As a student, I can filter suggestions by denomination, so that I only see churches that match my beliefs.
 12. As a student, I can filter suggestions by worship style, so that I only see churches that match how I like to worship.
-13. As a student, I can save a church to a favorites list, so that I can easily find it again later.
-14. As a student, I can remove a church from my favorites, so that my list stays relevant to me.
 15. As a student, I can retake the preference quiz, so that my suggestions update if my preferences change.
 16. As a student, I can see photos of a church, so that I know what to expect before visiting.
-17. As a student, I can see other students' ratings and comments, so that I can learn from their experience.
-18. As a student, I can write a comment about a church I've visited, so that I can help other students decide.
 19. As a student, I can edit or delete my own comment, so that I can fix mistakes or update my opinion.
 20. As a student, I can turn on notifications, so that I'm reminded about upcoming church events.
 21. As a student, I can turn off notifications, so that I'm not bothered if I don't want reminders.
-22. As a student, I can create an account with my email, so that I can save my results across devices.
-23. As a student, I can log in to my account, so that I can see my saved churches again.
-24. As a student, I can log out of my account, so that my info stays private on shared devices.
 25. As a student, I can reset my password, so that I can get back into my account if I forget it.
 26. As a student, I can update my preferences anytime, so that I don't have to start the quiz completely over.
 27. As a new student, I can see a short explanation of how the app works, so that I understand it the first time I open it.

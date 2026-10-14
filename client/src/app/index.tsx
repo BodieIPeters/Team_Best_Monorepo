@@ -1,3 +1,19 @@
+/**
+ * Home route ("/") for Church Match. This one component drives the whole
+ * signed-in flow by switching what it renders based on state:
+ *
+ *   not signed in -> Sign In / Register card
+ *   signed in     -> 'quiz'      : PreferenceQuiz        (SRS User Story 3)
+ *                    'results'   : QuizResults           (SRS User Story 4)
+ *                    'directory' : searchable church list with favorites + feedback
+ *
+ * Flow: sign in -> quiz -> (Submit) results -> (Return Home) directory.
+ *       "Skip for now" on the quiz goes straight to the directory.
+ *
+ * NOTE: there is no backend yet. Churches come from constants/mockChurches.ts,
+ * sign-in accepts any non-empty username, and favorites, feedback and quiz
+ * answers live only in React state, so they reset when the app reloads.
+ */
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -12,37 +28,71 @@ import {
 } from 'react-native';
 import { MOCK_CHURCHES, Church } from '@/constants/mockChurches';
 import { ChurchCard } from '@/components/ChurchCard';
+import { PreferenceQuiz } from '@/components/PreferenceQuiz';
+import { QuizResults } from '@/components/QuizResults';
+import { QuizAnswers } from '@/constants/quizQuestions';
+import { recommendChurches } from '@/utils/recommendChurches';
+
+/** Which page a signed-in student is on. Sign-in (and every re-sign-in) starts at 'quiz'. */
+type Screen = 'quiz' | 'results' | 'directory';
 
 export default function HomeScreen() {
+  // --- Sign-in state ---
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false); // which auth tab is active
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [password, setPassword] = useState(''); // not checked yet: no backend
+
+  // --- Church data, shared by the results and directory screens ---
+  // Held in state (not read straight from MOCK_CHURCHES) so new feedback can be added to it.
   const [churches, setChurches] = useState<Church[]>(MOCK_CHURCHES);
-  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]); // IDs of saved churches
+
+  // --- Directory filters ---
+  const [searchQuery, setSearchQuery] = useState('');
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
 
+  // --- Quiz flow ---
+  const [screen, setScreen] = useState<Screen>('quiz');
+  // null until the quiz is submitted; skipping the quiz leaves it null.
+  const [quizAnswers, setQuizAnswers] = useState<QuizAnswers | null>(null);
+
+  /** Signs the student in (placeholder: any non-empty username works) and opens the quiz. */
   const handleAuth = () => {
     if (username.trim()) {
       setIsLoggedIn(true);
+      setScreen('quiz');
     }
   };
 
+  /**
+   * Signs out and clears this student's session, so the next person on a
+   * shared device starts fresh at the quiz (SRS User Story 24).
+   */
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUsername('');
     setPassword('');
     setSearchQuery('');
     setShowOnlyFavorites(false);
+    setScreen('quiz');
+    setQuizAnswers(null);
   };
 
+  /** Saves the submitted quiz answers and shows the results screen. */
+  const handleQuizSubmit = (answers: QuizAnswers) => {
+    setQuizAnswers(answers);
+    setScreen('results');
+  };
+
+  /** Saves a church if it isn't saved yet, or removes it if it is (SRS User Stories 13 & 14). */
   const toggleFavorite = (id: string) => {
     setFavorites((prev) =>
       prev.includes(id) ? prev.filter((favId) => favId !== id) : [...prev, id]
     );
   };
 
+  /** Appends a feedback comment to one church (SRS User Story 18). */
   const handleAddFeedback = (id: string, newFeedback: string) => {
     setChurches((prevChurches) =>
       prevChurches.map((church) =>
@@ -53,6 +103,10 @@ export default function HomeScreen() {
     );
   };
 
+  /**
+   * Churches shown in the directory: must match the search box (by name or ZIP)
+   * and, if "Filter Favorites" is on, be saved. An empty search matches everything.
+   */
   const filteredChurches = churches.filter((church) => {
     const query = searchQuery.toLowerCase().trim();
     const matchesSearch =
@@ -124,15 +178,53 @@ export default function HomeScreen() {
     );
   }
 
+  // Welcome + Log Out bar, shared by all three signed-in screens.
+  const headerBar = (
+    <View style={styles.headerBar}>
+      <Text style={styles.welcomeText}>Welcome, {username}!</Text>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <Text style={styles.logoutText}>Log Out</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // PREFERENCE QUIZ (SRS User Story 3)
+  if (screen === 'quiz') {
+    return (
+      <SafeAreaView style={styles.container}>
+        {headerBar}
+        <PreferenceQuiz
+          onSubmit={handleQuizSubmit}
+          onSkip={() => setScreen('directory')}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // RECOMMENDED CHURCHES (SRS User Story 4).
+  // Recomputed from the live `churches` state so feedback left here appears right away.
+  // Without quizAnswers (shouldn't happen) this falls through to the directory.
+  if (screen === 'results' && quizAnswers) {
+    const { churches: recommendations, exactMatch } = recommendChurches(churches, quizAnswers);
+    return (
+      <SafeAreaView style={styles.container}>
+        {headerBar}
+        <QuizResults
+          recommendations={recommendations}
+          exactMatch={exactMatch}
+          favorites={favorites}
+          onToggleFavorite={toggleFavorite}
+          onAddFeedback={handleAddFeedback}
+          onReturnHome={() => setScreen('directory')}
+        />
+      </SafeAreaView>
+    );
+  }
+
   // PAGE 2: CHURCH DIRECTORY, SEARCH, & FAVORITES (User Stories 2 & 3)
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.headerBar}>
-        <Text style={styles.welcomeText}>Welcome, {username}!</Text>
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
-      </View>
+      {headerBar}
 
       <View style={styles.searchContainer}>
         <TextInput

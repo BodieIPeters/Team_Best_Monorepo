@@ -18,3 +18,6 @@ jobs:
         run: npm --prefix server install
       - name: Install client dependencies
         run: npm --prefix client install
+      # Run the client's Jest tests on every push/PR to main, so a broken test fails the CI check.
+      - name: Run client tests
+        run: npm --prefix client test -- --ci

@@ -17,12 +17,15 @@ describe('PR4 Client App Tests', () => {
     expect(getByText('Register & Continue')).toBeTruthy();
   });
 
+  // NOTE: sign-in now opens the preference quiz first. Tests 2-5 press "Skip for now"
+  // (btn-skip-quiz) to reach the directory; the quiz itself is tested in preferenceQuiz.test.tsx.
   test('2. Navigates from landing page to directory screen upon successful sign in', () => {
     const { getByText, getByPlaceholderText, getByTestId } = render(<HomeScreen />);
 
     fireEvent.changeText(getByPlaceholderText('Username'), 'DemoUser');
     fireEvent.changeText(getByPlaceholderText('Password'), 'password123');
     fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
 
     expect(getByText('Welcome, DemoUser!')).toBeTruthy();
     expect(getByPlaceholderText('Search by church name or ZIP code...')).toBeTruthy();
@@ -36,6 +39,7 @@ describe('PR4 Client App Tests', () => {
     // Login first
     fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
     fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
 
     // Search by specific ZIP code 
     const searchInput = getByPlaceholderText('Search by church name or ZIP code...');
@@ -51,6 +55,7 @@ describe('PR4 Client App Tests', () => {
     // Login
     fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
     fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
 
     // Save Cathedral of St. Andrew (id: 1)
     const favoriteBtn = getByTestId('favorite-button-1');
@@ -71,6 +76,7 @@ describe('PR4 Client App Tests', () => {
     // Login
     fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
     fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
 
     // Open feedback input on Church 1
     fireEvent.press(getByTestId('toggle-feedback-1'));
