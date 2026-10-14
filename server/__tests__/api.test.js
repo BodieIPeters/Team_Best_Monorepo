@@ -1,14 +1,31 @@
 
 const request = require("supertest");
 const app = require("../src/app");
-const { items, resetItems } = require("../src/mockData");
+const { db, resetData } = require("../src/mockData");
 
-// Reset mock database before every test
 beforeEach(() => {
-  resetItems();
+  resetData();
 });
 
-// GROUP 1: SERVER HEALTH TESTS
+const preferences = {
+  denomination: "Baptist",
+  worshipStyle: "Traditional",
+  maxDistanceMiles: 4
+};
+
+const feedback = {
+  studentId: 1,
+  churchId: "1",
+  rating: 5,
+  comment: "Friendly people"
+};
+
+const commitment = {
+  studentId: 1,
+  churchId: "1"
+};
+
+// SERVER HEALTH TESTS
 
 describe("Server Health Tests", () => {
 
@@ -20,338 +37,406 @@ describe("Server Health Tests", () => {
   });
 
   // TEST 2
-  test("Server returns correct health message", async () => {
+  test("Server identifies Church Match", async () => {
     const res = await request(app).get("/api/health");
 
     expect(res.body).toEqual({
-      status: "ok"
+      status: "ok",
+      app: "Church Match"
     });
   });
 
 });
 
-// GROUP 2: GET ALL ITEMS
+// GET ALL CHURCHES
 
-describe("GET /api/items", () => {
+describe("GET /api/churches", () => {
 
   // TEST 3
-  test("Returns status 200", async () => {
-    const res = await request(app).get("/api/items");
+  test("Returns all six churches", async () => {
+    const res = await request(app).get("/api/churches");
 
     expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(6);
   });
 
   // TEST 4
-  test("Returns an array", async () => {
-    const res = await request(app).get("/api/items");
+  test("Churches contain required properties", async () => {
+    const res = await request(app).get("/api/churches");
 
-    expect(Array.isArray(res.body)).toBe(true);
+    const church = res.body[0];
+
+    expect(church).toHaveProperty("id");
+    expect(church).toHaveProperty("name");
+    expect(church).toHaveProperty("address");
+    expect(church).toHaveProperty("city");
+    expect(church).toHaveProperty("state");
+    expect(church).toHaveProperty("zipcode");
+    expect(church).toHaveProperty("denomination");
+    expect(church).toHaveProperty("serviceTimes");
+    expect(church).toHaveProperty("worshipStyle");
+    expect(church).toHaveProperty("distanceMiles");
+    expect(church).toHaveProperty("rating");
+    expect(church).toHaveProperty("description");
+    expect(church).toHaveProperty("userFeedback");
   });
 
   // TEST 5
-  test("Returns all 3 mock items", async () => {
-    const res = await request(app).get("/api/items");
-
-    expect(res.body).toHaveLength(3);
-  });
-
-  // TEST 6
-  test("Items contain required properties", async () => {
-    const res = await request(app).get("/api/items");
-
-    expect(res.body[0]).toHaveProperty("id");
-    expect(res.body[0]).toHaveProperty("name");
-    expect(res.body[0]).toHaveProperty("description");
-  });
-
-});
-
-// GROUP 3: SEARCH ITEMS
-
-describe("GET /api/items Search", () => {
-
-  // TEST 7
-  test("Search finds matching item", async () => {
+  test("Searches churches by name", async () => {
     const res = await request(app)
-      .get("/api/items?search=One");
+      .get("/api/churches?search=Cathedral");
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
-    expect(res.body[0].name).toBe("Item One");
+    expect(res.body[0].name).toBe(
+      "Cathedral of St. Andrew"
+    );
   });
 
-  // TEST 8
+  // TEST 6
   test("Search is case insensitive", async () => {
     const res = await request(app)
-      .get("/api/items?search=one");
+      .get("/api/churches?search=cathedral");
 
-    expect(res.body[0].name).toBe("Item One");
+    expect(res.status).toBe(200);
+    expect(res.body[0].id).toBe("1");
   });
 
-  // TEST 9
-  test("Search returns empty array when no match", async () => {
+  // TEST 7
+  test("Search returns empty array if no match", async () => {
     const res = await request(app)
-      .get("/api/items?search=Unknown");
+      .get("/api/churches?search=UnknownChurch");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });
 
-  // TEST 10
-  test("Empty search returns all items", async () => {
+  // TEST 8
+  test("Filters churches by denomination", async () => {
     const res = await request(app)
-      .get("/api/items?search=");
+      .get("/api/churches?denomination=Catholic");
 
-    expect(res.body).toHaveLength(3);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].denomination).toBe("Catholic");
   });
 
-  // TEST 11
-  test("Rejects search query with array values", async () => {
+  // TEST 9
+  test("Filters churches by worship style", async () => {
     const res = await request(app)
-      .get("/api/items")
-      .query({ search: ["One", "Two"] });
+      .get("/api/churches?worshipStyle=Contemporary");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(3);
+
+    res.body.forEach(church => {
+      expect(church.worshipStyle).toBe("Contemporary");
+    });
+  });
+
+  // TEST 10
+  test("Returns church details by ID", async () => {
+    const res = await request(app).get("/api/churches/1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe("1");
+    expect(res.body.name).toBe(
+      "Cathedral of St. Andrew"
+    );
+  });
+
+});
+
+// STUDENT PREFERENCES
+
+describe("Student Preferences", () => {
+
+  // TEST 11
+  test("Retrieves student preferences", async () => {
+    const res = await request(app)
+      .get("/api/students/1/preferences");
+
+    expect(res.status).toBe(200);
+    expect(res.body.denomination).toBe("Catholic");
+    expect(res.body.worshipStyle).toBe("Liturgical");
+  });
+
+  // TEST 12
+  test("Returns 404 for nonexistent student", async () => {
+    const res = await request(app)
+      .get("/api/students/999/preferences");
+
+    expect(res.status).toBe(404);
+  });
+
+  // TEST 13
+  test("Updates student preferences", async () => {
+    const res = await request(app)
+      .put("/api/students/1/preferences")
+      .send(preferences);
+
+    expect(res.status).toBe(200);
+    expect(res.body.denomination).toBe("Baptist");
+    expect(res.body.worshipStyle).toBe("Traditional");
+    expect(res.body.maxDistanceMiles).toBe(4);
+  });
+
+  // TEST 14
+  test("Saved preferences can be retrieved", async () => {
+    await request(app)
+      .put("/api/students/1/preferences")
+      .send(preferences);
+
+    const res = await request(app)
+      .get("/api/students/1/preferences");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(preferences);
+  });
+
+  // TEST 15
+  test("Rejects incomplete preferences", async () => {
+    const res = await request(app)
+      .put("/api/students/1/preferences")
+      .send({
+        denomination: "Baptist"
+      });
+
+    expect(res.status).toBe(400);
+  });
+
+  // TEST 16
+  test("Rejects negative maximum distance", async () => {
+    const res = await request(app)
+      .put("/api/students/1/preferences")
+      .send({
+        denomination: "Catholic",
+        worshipStyle: "Liturgical",
+        maxDistanceMiles: -5
+      });
 
     expect(res.status).toBe(400);
   });
 
 });
 
-// GROUP 4: GET ITEM BY ID
+// CHURCH RECOMMENDATIONS
 
-describe("GET /api/items/:id", () => {
+describe("Church Recommendations", () => {
 
-  // TEST 12
-  test("Returns item with ID 1", async () => {
+  // TEST 17
+  test("Generates personalized recommendations", async () => {
     const res = await request(app)
-      .get("/api/items/1");
+      .get("/api/students/1/recommendations");
 
     expect(res.status).toBe(200);
-    expect(res.body.id).toBe(1);
+    expect(res.body).toHaveLength(6);
+
+    expect(res.body[0].id).toBe("1");
+    expect(res.body[0].matchScore).toBe(100);
+
+    for (let i = 1; i < res.body.length; i++) {
+      expect(res.body[i - 1].matchScore)
+        .toBeGreaterThanOrEqual(
+          res.body[i].matchScore
+        );
+    }
   });
 
-  // TEST 13
-  test("Returns correct item name", async () => {
+  // TEST 18
+  test("Changing preferences changes recommendations", async () => {
+    await request(app)
+      .put("/api/students/1/preferences")
+      .send({
+        denomination: "Nondenominational",
+        worshipStyle: "Contemporary",
+        maxDistanceMiles: 3
+      });
+
     const res = await request(app)
-      .get("/api/items/2");
+      .get("/api/students/1/recommendations");
 
-    expect(res.body.name).toBe("Item Two");
-  });
-
-  // TEST 14
-  test("Returns 404 for nonexistent ID", async () => {
-    const res = await request(app)
-      .get("/api/items/999");
-
-    expect(res.status).toBe(404);
-  });
-
-  // TEST 15
-  test("Returns 404 for invalid ID", async () => {
-    const res = await request(app)
-      .get("/api/items/abc");
-
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
+    expect(res.body[0].id).toBe("2");
+    expect(res.body[0].matchScore).toBe(100);
   });
 
 });
 
-// GROUP 5: CREATE ITEMS
+// CHURCH FEEDBACK
 
-describe("POST /api/items", () => {
-
-  // TEST 16
-  test("Creates a new item", async () => {
-    const res = await request(app)
-      .post("/api/items")
-      .send({
-        name: "New Item",
-        description: "New description"
-      });
-
-    expect(res.status).toBe(201);
-    expect(res.body.name).toBe("New Item");
-  });
-
-  // TEST 17
-  test("Assigns new item a unique ID", async () => {
-    const res = await request(app)
-      .post("/api/items")
-      .send({
-        name: "Fourth Item",
-        description: "Test"
-      });
-
-    expect(res.body.id).toBe(4);
-  });
-
-  // TEST 18
-  test("New item increases total count", async () => {
-    await request(app)
-      .post("/api/items")
-      .send({
-        name: "Added",
-        description: "Test"
-      });
-
-    const res = await request(app).get("/api/items");
-
-    expect(res.body).toHaveLength(4);
-  });
+describe("Church Feedback", () => {
 
   // TEST 19
-  test("Trims whitespace from item name", async () => {
+  test("Student can submit church feedback", async () => {
     const res = await request(app)
-      .post("/api/items")
-      .send({
-        name: "  Example  ",
-        description: "Test"
-      });
+      .post("/api/feedback")
+      .send(feedback);
 
-    expect(res.body.name).toBe("Example");
+    expect(res.status).toBe(201);
+    expect(res.body.studentId).toBe(1);
+    expect(res.body.churchId).toBe("1");
+    expect(res.body.rating).toBe(5);
   });
 
   // TEST 20
-  test("Uses empty description by default", async () => {
+  test("Rejects rating above 5", async () => {
     const res = await request(app)
-      .post("/api/items")
+      .post("/api/feedback")
       .send({
-        name: "Without Description"
+        ...feedback,
+        rating: 6
       });
 
-    expect(res.status).toBe(201);
-    expect(res.body.description).toBe("");
+    expect(res.status).toBe(400);
   });
 
   // TEST 21
-  test("Rejects missing name", async () => {
+  test("Rejects rating below 1", async () => {
     const res = await request(app)
-      .post("/api/items")
+      .post("/api/feedback")
       .send({
-        description: "Missing name"
+        ...feedback,
+        rating: 0
       });
 
     expect(res.status).toBe(400);
   });
 
   // TEST 22
-  test("Rejects empty name", async () => {
+  test("Rejects feedback for nonexistent church", async () => {
     const res = await request(app)
-      .post("/api/items")
+      .post("/api/feedback")
       .send({
-        name: "",
-        description: "Test"
+        ...feedback,
+        churchId: "999"
       });
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 
   // TEST 23
-  test("Rejects numeric name", async () => {
-    const res = await request(app)
-      .post("/api/items")
-      .send({
-        name: 123,
-        description: "Test"
-      });
+  test("Retrieves feedback for a church", async () => {
+    await request(app)
+      .post("/api/feedback")
+      .send(feedback);
 
-    expect(res.status).toBe(400);
+    const res = await request(app)
+      .get("/api/churches/1/feedback");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].rating).toBe(5);
   });
 
   // TEST 24
-  test("Rejects invalid description", async () => {
+  test("Feedback updates church information", async () => {
+    await request(app)
+      .post("/api/feedback")
+      .send(feedback);
+
     const res = await request(app)
-      .post("/api/items")
-      .send({
-        name: "Example",
-        description: 500
-      });
-
-    expect(res.status).toBe(400);
-  });
-
-});
-
-// UPDATE ITEMS
-
-describe("PUT /api/items/:id", () => {
-
-  // TEST 25
-  test("Updates item successfully", async () => {
-    const res = await request(app)
-      .put("/api/items/1")
-      .send({
-        name: "Updated Item",
-        description: "Updated description"
-      });
+      .get("/api/churches/1");
 
     expect(res.status).toBe(200);
-    expect(res.body.name).toBe("Updated Item");
-    expect(res.body.description).toBe(
-      "Updated description"
+    expect(res.body.userFeedback).toContain(
+      "Friendly people"
     );
   });
 
-  // TEST 26
-  test("Updating preserves the item ID", async () => {
-    const res = await request(app)
-      .put("/api/items/1")
-      .send({
-        name: "Changed",
-        description: "Changed description"
-      });
+});
 
-    expect(res.body.id).toBe(1);
+// CHURCH COMMITMENTS
+
+describe("Church Commitments", () => {
+
+  // TEST 25
+  test("Student can select a home church", async () => {
+    const res = await request(app)
+      .post("/api/commitments")
+      .send(commitment);
+
+    expect(res.status).toBe(201);
+    expect(res.body.churchId).toBe("1");
   });
 
-  // TEST 27
-  test("Returns 404 when updating missing item", async () => {
+  // TEST 26
+  test("Rejects nonexistent home church", async () => {
     const res = await request(app)
-      .put("/api/items/999")
+      .post("/api/commitments")
       .send({
-        name: "Missing",
-        description: "Test"
+        studentId: 1,
+        churchId: "999"
       });
 
     expect(res.status).toBe(404);
   });
 
-  // TEST 28
-  test("Rejects update with empty name", async () => {
-    const res = await request(app)
-      .put("/api/items/1")
-      .send({
-        name: "",
-        description: "Test"
-      });
+  // TEST 27
+  test("Retrieves student's selected church", async () => {
+    await request(app)
+      .post("/api/commitments")
+      .send(commitment);
 
-    expect(res.status).toBe(400);
+    const res = await request(app)
+      .get("/api/students/1/commitment");
+
+    expect(res.status).toBe(200);
+    expect(res.body.studentId).toBe(1);
+    expect(res.body.churchId).toBe("1");
   });
 
 });
 
-// GROUP 7: DELETE ITEMS
+// CHURCH ACTIVITIES
 
-describe("DELETE /api/items/:id", () => {
+describe("Church Activities", () => {
+
+  // TEST 28
+  test("Retrieves activities for a church", async () => {
+    const res = await request(app)
+      .get("/api/churches/1/activities");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].title).toBe(
+      "College Student Fellowship"
+    );
+  });
 
   // TEST 29
-  test("Deletes an existing item", async () => {
+  test("Cannot join activity before selecting church", async () => {
     const res = await request(app)
-      .delete("/api/items/1");
+      .post("/api/activities/1/join")
+      .send({
+        studentId: 1
+      });
 
-    expect(res.status).toBe(204);
-
-    const remaining = await request(app)
-      .get("/api/items");
-
-    expect(remaining.body).toHaveLength(2);
+    expect(res.status).toBe(403);
   });
 
   // TEST 30
-  test("Returns 404 when deleting missing item", async () => {
-    const res = await request(app)
-      .delete("/api/items/999");
+  test("Student joins activity and cannot join twice", async () => {
+    await request(app)
+      .post("/api/commitments")
+      .send(commitment);
 
-    expect(res.status).toBe(404);
+    const first = await request(app)
+      .post("/api/activities/1/join")
+      .send({
+        studentId: 1
+      });
+
+    expect(first.status).toBe(201);
+    expect(first.body.activity.participants).toContain(1);
+
+    const second = await request(app)
+      .post("/api/activities/1/join")
+      .send({
+        studentId: 1
+      });
+
+    expect(second.status).toBe(409);
   });
 
 });

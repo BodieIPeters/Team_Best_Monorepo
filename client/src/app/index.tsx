@@ -10,11 +10,14 @@
  * Flow: sign in -> quiz -> (Submit) results -> (Return Home) directory.
  *       "Skip for now" on the quiz goes straight to the directory.
  *
- * NOTE: there is no backend yet. Churches come from constants/mockChurches.ts,
- * sign-in accepts any non-empty username, and favorites, feedback and quiz
- * answers live only in React state, so they reset when the app reloads.
+ * Churches are loaded from the server on start-up (api/churches.ts). The
+ * results and directory screens show a spinner while loading and a Retry
+ * button if the server can't be reached.
+ *
+ * NOTE: sign-in still accepts any non-empty username, and favorites, feedback
+ * and quiz answers live only in React state, so they reset when the app reloads.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -25,8 +28,10 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { MOCK_CHURCHES, Church } from '@/constants/mockChurches';
+import { Church } from '@/constants/mockChurches';
+import { getChurches } from '@/api/churches';
 import { ChurchCard } from '@/components/ChurchCard';
 import { PreferenceQuiz } from '@/components/PreferenceQuiz';
 import { QuizResults } from '@/components/QuizResults';
@@ -43,9 +48,10 @@ export default function HomeScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState(''); // not checked yet: no backend
 
-  // --- Church data, shared by the results and directory screens ---
-  // Held in state (not read straight from MOCK_CHURCHES) so new feedback can be added to it.
-  const [churches, setChurches] = useState<Church[]>(MOCK_CHURCHES);
+  // --- Church data from the server, shared by the results and directory screens ---
+  const [churches, setChurches] = useState<Church[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [favorites, setFavorites] = useState<string[]>([]); // IDs of saved churches
 
   // --- Directory filters ---
@@ -56,6 +62,25 @@ export default function HomeScreen() {
   const [screen, setScreen] = useState<Screen>('quiz');
   // null until the quiz is submitted; skipping the quiz leaves it null.
   const [quizAnswers, setQuizAnswers] = useState<QuizAnswers | null>(null);
+
+  /** Fetches churches from the server, tracking loading and error state. */
+  async function loadChurches() {
+    try {
+      setLoading(true);
+      setError('');
+      setChurches(await getChurches());
+    } catch (err) {
+      setError('Unable to connect to the server');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Load once when the app opens, so data is usually ready by the time the quiz is done.
+  useEffect(() => {
+    loadChurches();
+  }, []);
 
   /** Signs the student in (placeholder: any non-empty username works) and opens the quiz. */
   const handleAuth = () => {
@@ -197,6 +222,32 @@ export default function HomeScreen() {
           onSubmit={handleQuizSubmit}
           onSkip={() => setScreen('directory')}
         />
+      </SafeAreaView>
+    );
+  }
+
+  // Everything below needs church data. The quiz above doesn't, so it is never blocked.
+  if (loading || error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        {headerBar}
+        <View style={styles.statusBox}>
+          {loading ? (
+            <>
+              <ActivityIndicator size="large" color="#1e3a8a" />
+              <Text style={styles.statusText}>Loading churches...</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.errorText} testID="load-error">
+                {error}
+              </Text>
+              <TouchableOpacity style={styles.button} onPress={loadChurches} testID="btn-retry">
+                <Text style={styles.buttonText}>Retry</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
       </SafeAreaView>
     );
   }
@@ -346,5 +397,8 @@ const styles = StyleSheet.create({
   filterBtnText: { color: '#374151', fontSize: 13, fontWeight: '600' },
   filterBtnTextActive: { color: '#d97706' },
   listContainer: { paddingHorizontal: 16, paddingBottom: 20 },
+  statusBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  statusText: { marginTop: 12, color: '#4b5563' },
+  errorText: { color: '#dc2626', fontWeight: '600', marginBottom: 12, textAlign: 'center' },
   emptyText: { textAlign: 'center', marginTop: 24, color: '#888', fontStyle: 'italic' },
 });

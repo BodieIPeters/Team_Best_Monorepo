@@ -7,20 +7,32 @@
  * `btn-submit-quiz`), which are set in components/PreferenceQuiz.tsx and
  * components/QuizResults.tsx.
  */
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
 import HomeScreen from '../app/index';
+import { getChurches } from '../api/churches';
+import { MOCK_CHURCHES } from '../constants/mockChurches';
 
-/** Renders the app and signs in, which lands on the quiz. Returns the render helpers. */
-const signIn = () => {
+// Stand in for the server: getChurches resolves with the mock data instead of calling fetch.
+jest.mock('../api/churches', () => ({ getChurches: jest.fn() }));
+beforeEach(() => {
+  jest.mocked(getChurches).mockResolvedValue(MOCK_CHURCHES);
+});
+
+/**
+ * Renders the app, lets the (mocked) church load finish, and signs in, which
+ * lands on the quiz. Returns the render helpers.
+ */
+const signIn = async () => {
   const utils = render(<HomeScreen />);
+  await act(async () => {}); // flush the resolved getChurches promise
   fireEvent.changeText(utils.getByPlaceholderText('Username'), 'QuizUser');
   fireEvent.press(utils.getByTestId('btn-auth'));
   return utils;
 };
 
-type Utils = ReturnType<typeof signIn>;
+type Utils = Awaited<ReturnType<typeof signIn>>;
 
 /** Picks one option per question. Pass option values, e.g. 'Catholic', '5', 'no-preference'. */
 const answerQuiz = (
@@ -35,15 +47,15 @@ const answerQuiz = (
 };
 
 describe('Preference quiz flow (User Stories 3 & 4)', () => {
-  test('shows the quiz right after sign-in', () => {
-    const { getByText, getByTestId } = signIn();
+  test('shows the quiz right after sign-in', async () => {
+    const { getByText, getByTestId } = await signIn();
     expect(getByText('Church Quiz')).toBeTruthy();
     expect(getByText(/Which denomination/)).toBeTruthy();
     expect(getByTestId('btn-submit-quiz')).toBeTruthy();
   });
 
-  test('Submit stays disabled until every question is answered', () => {
-    const utils = signIn();
+  test('Submit stays disabled until every question is answered', async () => {
+    const utils = await signIn();
     const { getByTestId, queryByText } = utils;
 
     fireEvent.press(getByTestId('option-denomination-Catholic'));
@@ -56,8 +68,8 @@ describe('Preference quiz flow (User Stories 3 & 4)', () => {
     expect(queryByText('Your Recommendations')).toBeTruthy();
   });
 
-  test('selecting an option marks it checked', () => {
-    const { getByTestId } = signIn();
+  test('selecting an option marks it checked', async () => {
+    const { getByTestId } = await signIn();
     const option = getByTestId('option-worshipStyle-Blended');
     expect(option.props.accessibilityState).toEqual({ checked: false });
     fireEvent.press(option);
@@ -66,8 +78,8 @@ describe('Preference quiz flow (User Stories 3 & 4)', () => {
     });
   });
 
-  test('submitting shows only the recommended churches', () => {
-    const utils = signIn();
+  test('submitting shows only the recommended churches', async () => {
+    const utils = await signIn();
     answerQuiz(utils, 'Nondenominational', 'Contemporary', '5');
     fireEvent.press(utils.getByTestId('btn-submit-quiz'));
 
@@ -78,8 +90,8 @@ describe('Preference quiz flow (User Stories 3 & 4)', () => {
     expect(utils.queryByText('Ada Bible Church (East Paris)')).toBeNull();
   });
 
-  test('explains when it is showing closest matches instead', () => {
-    const utils = signIn();
+  test('explains when it is showing closest matches instead', async () => {
+    const utils = await signIn();
     answerQuiz(utils, 'Catholic', 'Contemporary', 'no-preference');
     fireEvent.press(utils.getByTestId('btn-submit-quiz'));
 
@@ -87,8 +99,8 @@ describe('Preference quiz flow (User Stories 3 & 4)', () => {
     expect(utils.getByText('Cathedral of St. Andrew')).toBeTruthy();
   });
 
-  test('Return Home goes to the full directory', () => {
-    const utils = signIn();
+  test('Return Home goes to the full directory', async () => {
+    const utils = await signIn();
     answerQuiz(utils, 'Nondenominational', 'Contemporary', '5');
     fireEvent.press(utils.getByTestId('btn-submit-quiz'));
     fireEvent.press(utils.getByTestId('btn-return-home'));
@@ -97,16 +109,16 @@ describe('Preference quiz flow (User Stories 3 & 4)', () => {
     expect(utils.getByText('Cathedral of St. Andrew')).toBeTruthy();
   });
 
-  test('Skip for now goes straight to the directory', () => {
-    const { getByTestId, getByPlaceholderText, queryByText } = signIn();
+  test('Skip for now goes straight to the directory', async () => {
+    const { getByTestId, getByPlaceholderText, queryByText } = await signIn();
     fireEvent.press(getByTestId('btn-skip-quiz'));
 
     expect(getByPlaceholderText('Search by church name or ZIP code...')).toBeTruthy();
     expect(queryByText('Church Quiz')).toBeNull();
   });
 
-  test('saving a church from the results carries over to the directory', () => {
-    const utils = signIn();
+  test('saving a church from the results carries over to the directory', async () => {
+    const utils = await signIn();
     answerQuiz(utils, 'Nondenominational', 'Contemporary', '5');
     fireEvent.press(utils.getByTestId('btn-submit-quiz'));
     fireEvent.press(utils.getByTestId('favorite-button-2'));
@@ -117,8 +129,8 @@ describe('Preference quiz flow (User Stories 3 & 4)', () => {
     expect(utils.queryByText('Cathedral of St. Andrew')).toBeNull();
   });
 
-  test('logging out and back in starts at the quiz again', () => {
-    const utils = signIn();
+  test('logging out and back in starts at the quiz again', async () => {
+    const utils = await signIn();
     fireEvent.press(utils.getByTestId('btn-skip-quiz'));
     fireEvent.press(utils.getByText('Log Out'));
     fireEvent.changeText(utils.getByPlaceholderText('Username'), 'QuizUser');

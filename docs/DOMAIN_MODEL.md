@@ -1,6 +1,5 @@
 ## Entities
 - User
-- Preference Profile
 - Suggestion
 - Visit
 - Feedback
@@ -8,19 +7,17 @@
 - Service
 - Ministry
 - Event
-- Location
 - Administrator
 
 
 ## Entity Relationships
 ### Person side
-- A User has one Preference Profile
+- A User has preferences (denomination, worship style, service times, max distance)
 - A User makes many Visits
 - A User attends many Events
 - A User receives many Suggestions
 
 ### Suggestions (between User and Church)
-- A Preference Profile leads to many Suggestions
 - A Suggestion belongs to one User and is for one Church
 
 ### Visits and Feedback
@@ -30,7 +27,7 @@
 - A Feedback belongs to one Visit
 
 ### Church side
-- A Church has one Location
+- A Church has a location (address, city, state, zip)
 - A Church has one or more Administrators
 - A Church offers one or more Services
 - A Church runs zero or more Ministries
@@ -39,4 +36,4 @@
 - An Event belongs to one Church and optionally to one Ministry
 
 
-![Domain Model](./images/Domain_Model_Screenshot.png)
+![Domain Model](./images/Domain_Model_Screenshot2.0.png)

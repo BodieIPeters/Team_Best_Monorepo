@@ -1,7 +1,19 @@
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import HomeScreen from '../app/index';
+import { getChurches } from '../api/churches';
+import { MOCK_CHURCHES } from '../constants/mockChurches';
+
+// Stand in for the server: getChurches resolves with the mock data instead of calling fetch.
+jest.mock('../api/churches', () => ({ getChurches: jest.fn() }));
+const mockGetChurches = jest.mocked(getChurches);
+beforeEach(() => {
+  mockGetChurches.mockReset();
+  mockGetChurches.mockResolvedValue(MOCK_CHURCHES);
+});
+
+const SEARCH_PLACEHOLDER = 'Search by church name or ZIP code...';
 
 describe('PR4 Client App Tests', () => {
   // --- LANDING PAGE TESTS (2 Tests) ---
@@ -17,45 +29,49 @@ describe('PR4 Client App Tests', () => {
     expect(getByText('Register & Continue')).toBeTruthy();
   });
 
-  // NOTE: sign-in now opens the preference quiz first. Tests 2-5 press "Skip for now"
-  // (btn-skip-quiz) to reach the directory; the quiz itself is tested in preferenceQuiz.test.tsx.
-  test('2. Navigates from landing page to directory screen upon successful sign in', () => {
-    const { getByText, getByPlaceholderText, getByTestId } = render(<HomeScreen />);
+  // NOTE: sign-in opens the preference quiz first. Tests 2-5 press "Skip for now"
+  // (btn-skip-quiz) to reach the directory, then wait for churches to load;
+  // the quiz itself is tested in preferenceQuiz.test.tsx.
+  test('2. Navigates from landing page to directory screen upon successful sign in', async () => {
+    const { getByText, getByPlaceholderText, getByTestId, findByPlaceholderText } = render(<HomeScreen />);
 
     fireEvent.changeText(getByPlaceholderText('Username'), 'DemoUser');
     fireEvent.changeText(getByPlaceholderText('Password'), 'password123');
     fireEvent.press(getByTestId('btn-auth'));
     fireEvent.press(getByTestId('btn-skip-quiz'));
 
+    expect(await findByPlaceholderText(SEARCH_PLACEHOLDER)).toBeTruthy();
     expect(getByText('Welcome, DemoUser!')).toBeTruthy();
-    expect(getByPlaceholderText('Search by church name or ZIP code...')).toBeTruthy();
   });
 
   // CHURCH DIRECTORY & USER STORIES TESTS 
 
-  test('3. [User Story 2: Search] filters churches by ZIP code', () => {
-    const { getByText, getByPlaceholderText, queryByText, getByTestId } = render(<HomeScreen />);
+  test('3. [User Story 2: Search] filters churches by ZIP code', async () => {
+    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
 
     // Login first
     fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
     fireEvent.press(getByTestId('btn-auth'));
     fireEvent.press(getByTestId('btn-skip-quiz'));
 
-    // Search by specific ZIP code 
-    const searchInput = getByPlaceholderText('Search by church name or ZIP code...');
+    // Search by specific ZIP code (once churches have loaded)
+    const searchInput = await findByPlaceholderText(SEARCH_PLACEHOLDER);
     fireEvent.changeText(searchInput, '49504');
 
     expect(getByText('Crossroads Bible Church')).toBeTruthy();
     expect(queryByText('Cathedral of St. Andrew')).toBeNull();
   });
 
-  test('4. [User Story 3: Favorites] toggles favorite status and filters saved churches', () => {
-    const { getByText, getByPlaceholderText, queryByText, getByTestId } = render(<HomeScreen />);
+  test('4. [User Story 3: Favorites] toggles favorite status and filters saved churches', async () => {
+    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
 
     // Login
     fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
     fireEvent.press(getByTestId('btn-auth'));
     fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
 
     // Save Cathedral of St. Andrew (id: 1)
     const favoriteBtn = getByTestId('favorite-button-1');
@@ -70,13 +86,15 @@ describe('PR4 Client App Tests', () => {
     expect(queryByText('Crossroads Bible Church')).toBeNull();
   });
 
-  test('5. [User Story 3: Feedback] allows users to submit custom feedback on a church', () => {
-    const { getByText, getByPlaceholderText, getByTestId } = render(<HomeScreen />);
+  test('5. [User Story 3: Feedback] allows users to submit custom feedback on a church', async () => {
+    const { getByText, getByPlaceholderText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
 
     // Login
     fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
     fireEvent.press(getByTestId('btn-auth'));
     fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
 
     // Open feedback input on Church 1
     fireEvent.press(getByTestId('toggle-feedback-1'));
@@ -88,5 +106,24 @@ describe('PR4 Client App Tests', () => {
 
     // Verify feedback is added to the UI
     expect(getByText('• Great choir music on Sunday morning!')).toBeTruthy();
+  });
+
+  // --- SERVER CONNECTION ---
+
+  test('6. shows an error with Retry when the server is unreachable, and recovers on Retry', async () => {
+    mockGetChurches.mockRejectedValueOnce(new Error('Network request failed'));
+    jest.spyOn(console, 'error').mockImplementation(() => {}); // expected error, keep output clean
+
+    const { getByPlaceholderText, getByTestId, findByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+
+    expect(await findByTestId('load-error')).toBeTruthy();
+
+    fireEvent.press(getByTestId('btn-retry')); // second call uses the default: resolves with churches
+    expect(await findByPlaceholderText(SEARCH_PLACEHOLDER)).toBeTruthy();
+    expect(mockGetChurches).toHaveBeenCalledTimes(2);
   });
 });
