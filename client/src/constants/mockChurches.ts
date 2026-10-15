@@ -14,6 +14,7 @@ export interface Church {
   userFeedback: string[];
 }
 
+// Placeholder church data used throughout the app until the server is connected
 export const MOCK_CHURCHES: Church[] = [
   {
     id: '1',
