@@ -84,7 +84,7 @@ A lot of college students, especially freshmen, have a hard time finding a churc
 
 ### 4.1 Database Requirements
 The app needs to store:
-- Church info (name, address, denomination, worship style, service times)
-- User accounts (for students who sign up)
-- User preferences (answers to the quiz)
-- User feedback and ratings on churches
+- Church info (name, address, denomination, worship style, service times, languages).
+- User accounts (for students who sign up).
+- User preferences (answers to the quiz).
+- User feedback and ratings on churches.
