@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Share,
   StyleSheet,
   Text,
   View,
@@ -33,6 +34,19 @@ export const ChurchCard: React.FC<ChurchCardProps> = ({
     }
   };
 
+  const handleShare = async () => {
+    const message = `${church.name} — ${church.denomination} • ${church.worshipStyle}\n` +
+      `${church.address}, ${church.city}, ${church.state} ${church.zipcode}\n` +
+      `Service times: ${church.serviceTimes}\n` +
+      `${church.description}`;
+
+    try {
+      await Share.share({ message });
+    } catch (error) {
+      // User dismissed the share sheet; nothing to do.
+    }
+  };
+
   return (
     <View style={styles.card} testID={`church-card-${church.id}`}>
       <View style={styles.header}>
@@ -42,13 +56,22 @@ export const ChurchCard: React.FC<ChurchCardProps> = ({
             {church.denomination} • {church.worshipStyle}
           </Text>
         </View>
-        <TouchableOpacity
-          testID={`favorite-button-${church.id}`}
-          style={[styles.favoriteBtn, isFavorite && styles.favoriteBtnActive]}
-          onPress={() => onToggleFavorite(church.id)}
-        >
-          <Text style={styles.favoriteText}>{isFavorite ? '★ Saved' : '☆ Save'}</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            testID={`share-button-${church.id}`}
+            style={styles.shareBtn}
+            onPress={handleShare}
+          >
+            <Text style={styles.shareText}>↗ Share</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID={`favorite-button-${church.id}`}
+            style={[styles.favoriteBtn, isFavorite && styles.favoriteBtnActive]}
+            onPress={() => onToggleFavorite(church.id)}
+          >
+            <Text style={styles.favoriteText}>{isFavorite ? '★ Saved' : '☆ Save'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <Text style={styles.description}>{church.description}</Text>
@@ -123,8 +146,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   titleContainer: { flex: 1, paddingRight: 8 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   name: { fontSize: 18, fontWeight: 'bold', color: '#1e3a8a' },
   denomination: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  shareBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: '#eef2ff',
+    borderWidth: 1,
+    borderColor: '#c7d2fe',
+  },
+  shareText: { fontSize: 12, fontWeight: 'bold', color: '#4338ca' },
   favoriteBtn: {
     paddingHorizontal: 10,
     paddingVertical: 5,

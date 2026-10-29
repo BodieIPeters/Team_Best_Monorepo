@@ -38,6 +38,7 @@ A lot of college students, especially freshmen, have a hard time finding a churc
 14. As a student, I can remove a church from my favorites, so that my list stays relevant to me.
 18. As a student, I can write a comment about a church I've visited, so that I can help other students decide.
 24. As a student, I can log out of my account, so that my info stays private on shared devices.
+28. As a student, I can share a church's info with a friend, so that we can decide together.
 
 **USER STORIES PARTIALLY IMPLEMENTED:**
 1. As a student, I can see a welcome screen when I open the app, so that I know what the app is for before I start.
@@ -61,7 +62,6 @@ A lot of college students, especially freshmen, have a hard time finding a churc
 25. As a student, I can reset my password, so that I can get back into my account if I forget it.
 26. As a student, I can update my preferences anytime, so that I don't have to start the quiz completely over.
 27. As a new student, I can see a short explanation of how the app works, so that I understand it the first time I open it.
-28. As a student, I can share a church's info with a friend, so that we can decide together.
 
 ### 3.2 Non-Functional Requirements
 
@@ -78,6 +78,7 @@ A lot of college students, especially freshmen, have a hard time finding a churc
 - Church Suggestions
 - Church Profile
 - Feedback and Ratings
+- Share Church
 - Post-Commitment Reminders
 
 ## 4. Other Requirements
