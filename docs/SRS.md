@@ -30,6 +30,8 @@ A lot of college students, especially freshmen, have a hard time finding a churc
 ### 3.1 Functional Requirements
 
 **IMPLEMENTED USER STORIES:**
+1. As a student, I can see a welcome screen when I open the app, so that I know what the app is for before I start.
+2. As a student, I can choose to sign up or skip sign-up, so that I can try the app before committing to an account.
 3. As a student, I can answer preference questions (like denomination and worship style), so that the app can suggest churches that fit me.
 4. As a student, I can see a list of suggested churches, so that I know where to start looking.
 5. As a student, I can view details about a church (name, address, service times), so that I can decide if I want to visit.
@@ -41,8 +43,6 @@ A lot of college students, especially freshmen, have a hard time finding a churc
 28. As a student, I can share a church's info with a friend, so that we can decide together.
 
 **USER STORIES PARTIALLY IMPLEMENTED:**
-1. As a student, I can see a welcome screen when I open the app, so that I know what the app is for before I start.
-2. As a student, I can choose to sign up or skip sign-up, so that I can try the app before committing to an account.
 6. As a student, I can rate or leave feedback on a church, so that other students can benefit from my experience.
 8. As a student, I can save my results if I signed up, so that I don't lose my preferences.
 17. As a student, I can see other students' ratings and comments, so that I can learn from their experience.
