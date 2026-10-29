@@ -1,6 +1,7 @@
 import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
+import { Share } from 'react-native';
 import HomeScreen from '../app/index';
 import { getChurches } from '../api/churches';
 import { MOCK_CHURCHES } from '../constants/mockChurches';
@@ -8,9 +9,15 @@ import { MOCK_CHURCHES } from '../constants/mockChurches';
 // Stand in for the server: getChurches resolves with the mock data instead of calling fetch.
 jest.mock('../api/churches', () => ({ getChurches: jest.fn() }));
 const mockGetChurches = jest.mocked(getChurches);
+
+// Mock the native Share API so we can assert the share menu is opened with the right content.
+jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction } as any);
+const mockShare = jest.mocked(Share.share);
+
 beforeEach(() => {
   mockGetChurches.mockReset();
   mockGetChurches.mockResolvedValue(MOCK_CHURCHES);
+  mockShare.mockClear();
 });
 
 const SEARCH_PLACEHOLDER = 'Search by church name or ZIP code...';
@@ -106,6 +113,30 @@ describe('PR4 Client App Tests', () => {
 
     // Verify feedback is added to the UI
     expect(getByText('• Great choir music on Sunday morning!')).toBeTruthy();
+  });
+
+  test('5b. [User Story 28: Share] opens the share menu with the church info when Share is pressed', async () => {
+    const { getByPlaceholderText, getByTestId, findByPlaceholderText } = render(<HomeScreen />);
+
+    // Login
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
+
+    // Every church card should expose a share button
+    expect(getByTestId('share-button-1')).toBeTruthy();
+    expect(getByTestId('share-button-2')).toBeTruthy();
+
+    // Pressing Share should open the native share menu with the church's info
+    fireEvent.press(getByTestId('share-button-1'));
+    expect(mockShare).toHaveBeenCalledTimes(1);
+
+    const sharedContent = mockShare.mock.calls[0][0];
+    expect(sharedContent.message).toContain('Cathedral of St. Andrew');
+    expect(sharedContent.message).toContain('Catholic');
+    expect(sharedContent.message).toContain('301 Sheldon Blvd SE');
+    expect(sharedContent.message).toContain('Sun 8:30 AM, 10:30 AM, 5:30 PM');
   });
 
   // --- SERVER CONNECTION ---

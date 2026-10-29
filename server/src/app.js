@@ -4,7 +4,7 @@ const cors = require("cors");
 const { db } = require("./mockData");
 const {
   searchChurches
-} = require("./database/churchQueries");
+} = require("../database/churchQueries");
 
 const app = express();
 
