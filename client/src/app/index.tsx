@@ -10,6 +10,11 @@
  * Flow: sign in -> quiz -> (Submit) results -> (Return Home) directory.
  *       "Skip for now" on the quiz goes straight to the directory.
  *
+ * The student can retake the quiz from the results screen (SRS User Story 15)
+ * or update their preferences from the directory (SRS User Story 26). Both
+ * reopen the quiz pre-filled with their current answers so they don't start
+ * over; submitting updates the recommendations.
+ *
  * Churches are loaded from the server on start-up (api/churches.ts). The
  * results and directory screens show a spinner while loading and a Retry
  * button if the server can't be reached.
@@ -108,6 +113,14 @@ export default function HomeScreen() {
   const handleQuizSubmit = (answers: QuizAnswers) => {
     setQuizAnswers(answers);
     setScreen('results');
+  };
+
+  /**
+   * Reopens the quiz pre-filled with the student's current answers so they can
+   * update their preferences without starting over (SRS User Stories 15 & 26).
+   */
+  const handleRetakeQuiz = () => {
+    setScreen('quiz');
   };
 
   /** Saves a church if it isn't saved yet, or removes it if it is (SRS User Stories 13 & 14). */
@@ -221,6 +234,7 @@ export default function HomeScreen() {
         <PreferenceQuiz
           onSubmit={handleQuizSubmit}
           onSkip={() => setScreen('directory')}
+          initialAnswers={quizAnswers ?? undefined}
         />
       </SafeAreaView>
     );
@@ -267,6 +281,7 @@ export default function HomeScreen() {
           onToggleFavorite={toggleFavorite}
           onAddFeedback={handleAddFeedback}
           onReturnHome={() => setScreen('directory')}
+          onRetakeQuiz={handleRetakeQuiz}
         />
       </SafeAreaView>
     );
@@ -297,6 +312,14 @@ export default function HomeScreen() {
           >
             {showOnlyFavorites ? 'Showing Favorites ★' : 'Filter Favorites'}
           </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.updatePrefsBtn}
+          onPress={handleRetakeQuiz}
+          testID="btn-update-preferences"
+        >
+          <Text style={styles.updatePrefsText}>Update Preferences</Text>
         </TouchableOpacity>
       </View>
 
@@ -396,6 +419,15 @@ const styles = StyleSheet.create({
   filterBtnActive: { backgroundColor: '#fef3c7', borderWidth: 1, borderColor: '#f59e0b' },
   filterBtnText: { color: '#374151', fontSize: 13, fontWeight: '600' },
   filterBtnTextActive: { color: '#d97706' },
+  updatePrefsBtn: {
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: '#1e3a8a',
+    alignSelf: 'flex-start',
+  },
+  updatePrefsText: { color: '#fff', fontSize: 13, fontWeight: '600' },
   listContainer: { paddingHorizontal: 16, paddingBottom: 20 },
   statusBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   statusText: { marginTop: 12, color: '#4b5563' },

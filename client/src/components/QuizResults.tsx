@@ -9,6 +9,9 @@
  * decided by utils/recommendChurches.ts and passed in from app/index.tsx.
  * Church cards reuse components/ChurchCard.tsx, so saving a favorite or
  * leaving feedback works the same here as in the directory.
+ *
+ * The "Update Preferences" button (SRS User Story 15: retake the quiz) lets
+ * the student go back and change their answers so the suggestions update.
  */
 import React from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -25,6 +28,8 @@ interface QuizResultsProps {
   onToggleFavorite: (id: string) => void;
   onAddFeedback: (id: string, feedback: string) => void;
   onReturnHome: () => void;
+  /** Called when the student wants to retake/update the quiz (SRS User Story 15). */
+  onRetakeQuiz: () => void;
 }
 
 export const QuizResults: React.FC<QuizResultsProps> = ({
@@ -34,6 +39,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   onToggleFavorite,
   onAddFeedback,
   onReturnHome,
+  onRetakeQuiz,
 }) => {
   const hasResults = recommendations.length > 0;
 
@@ -71,6 +77,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       />
       {/* Footer sits outside the FlatList so "Return Home" stays visible while scrolling. */}
       <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.retakeBtn}
+          onPress={onRetakeQuiz}
+          testID="btn-retake-quiz"
+        >
+          <Text style={styles.retakeText}>Update Preferences</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.homeBtn} onPress={onReturnHome} testID="btn-return-home">
           <Text style={styles.homeText}>Return Home</Text>
         </TouchableOpacity>
@@ -91,7 +104,15 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
     backgroundColor: '#fff',
+    gap: 8,
   },
+  retakeBtn: {
+    backgroundColor: '#1e3a8a',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  retakeText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
   homeBtn: {
     borderWidth: 1,
     borderColor: '#1e3a8a',
