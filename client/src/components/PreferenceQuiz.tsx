@@ -9,6 +9,10 @@
  * This component only collects answers. It does not decide what happens next:
  * it hands the answers to `onSubmit` (or calls `onSkip`), and the parent
  * screen (app/index.tsx) decides where to navigate.
+ *
+ * When `initialAnswers` is provided (SRS User Story 26: update preferences
+ * anytime), the quiz opens with those answers already selected so the student
+ * can tweak them instead of starting completely over.
  */
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -19,11 +23,24 @@ interface PreferenceQuizProps {
   onSubmit: (answers: QuizAnswers) => void;
   /** Called when the student chooses "Skip for now" (SRS User Story 2: try before committing). */
   onSkip: () => void;
+  /**
+   * Answers to pre-fill, e.g. from a previous quiz. When present the quiz is
+   * treated as an "update" (SRS User Story 26) rather than a first run.
+   */
+  initialAnswers?: QuizAnswers;
 }
 
-export const PreferenceQuiz: React.FC<PreferenceQuizProps> = ({ onSubmit, onSkip }) => {
+export const PreferenceQuiz: React.FC<PreferenceQuizProps> = ({
+  onSubmit,
+  onSkip,
+  initialAnswers,
+}) => {
   // Partial because answers fill in one question at a time; a missing key = not answered yet.
-  const [answers, setAnswers] = useState<Partial<QuizAnswers>>({});
+  // Pre-fill from initialAnswers when retaking so the student doesn't start over (US 26).
+  const [answers, setAnswers] = useState<Partial<QuizAnswers>>(initialAnswers ?? {});
+
+  // True when this is an "update" run (previous answers were passed in).
+  const isRetake = initialAnswers !== undefined;
 
   // Submit is only enabled once every question has an answer ("No preference" counts).
   const allAnswered = QUIZ_QUESTIONS.every((q) => answers[q.id] !== undefined);
@@ -42,9 +59,11 @@ export const PreferenceQuiz: React.FC<PreferenceQuizProps> = ({ onSubmit, onSkip
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Church Quiz</Text>
+      <Text style={styles.title}>{isRetake ? 'Update Your Preferences' : 'Church Quiz'}</Text>
       <Text style={styles.subtitle}>
-        Answer three quick questions and we&apos;ll recommend churches that fit you.
+        {isRetake
+          ? 'Your answers are already filled in. Change anything and submit to update your recommendations.'
+          : 'Answer three quick questions and we&apos;ll recommend churches that fit you.'}
       </Text>
 
       {QUIZ_QUESTIONS.map((question, index) => (
@@ -84,7 +103,7 @@ export const PreferenceQuiz: React.FC<PreferenceQuizProps> = ({ onSubmit, onSkip
         accessibilityState={{ disabled: !allAnswered }}
         testID="btn-submit-quiz"
       >
-        <Text style={styles.submitText}>Submit</Text>
+        <Text style={styles.submitText}>{isRetake ? 'Update Preferences' : 'Submit'}</Text>
       </TouchableOpacity>
       {!allAnswered && (
         <Text style={styles.hint}>Answer all three questions to see your recommendations.</Text>

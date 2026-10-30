@@ -41,6 +41,8 @@ A lot of college students, especially freshmen, have a hard time finding a churc
 18. As a student, I can write a comment about a church I've visited, so that I can help other students decide.
 24. As a student, I can log out of my account, so that my info stays private on shared devices.
 28. As a student, I can share a church's info with a friend, so that we can decide together.
+15. As a student, I can retake the preference quiz, so that my suggestions update if my preferences change.
+26. As a student, I can update my preferences anytime, so that I don't have to start the quiz completely over.
 
 **USER STORIES PARTIALLY IMPLEMENTED:**
 6. As a student, I can rate or leave feedback on a church, so that other students can benefit from my experience.
@@ -54,13 +56,11 @@ A lot of college students, especially freshmen, have a hard time finding a churc
 10. As a student, I can filter suggestions by distance from campus, so that I only see churches I can realistically get to.
 11. As a student, I can filter suggestions by denomination, so that I only see churches that match my beliefs.
 12. As a student, I can filter suggestions by worship style, so that I only see churches that match how I like to worship.
-15. As a student, I can retake the preference quiz, so that my suggestions update if my preferences change.
 16. As a student, I can see photos of a church, so that I know what to expect before visiting.
 19. As a student, I can edit or delete my own comment, so that I can fix mistakes or update my opinion.
 20. As a student, I can turn on notifications, so that I'm reminded about upcoming church events.
 21. As a student, I can turn off notifications, so that I'm not bothered if I don't want reminders.
 25. As a student, I can reset my password, so that I can get back into my account if I forget it.
-26. As a student, I can update my preferences anytime, so that I don't have to start the quiz completely over.
 27. As a new student, I can see a short explanation of how the app works, so that I understand it the first time I open it.
 
 ### 3.2 Non-Functional Requirements

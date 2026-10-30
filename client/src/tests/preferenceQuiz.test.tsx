@@ -139,3 +139,66 @@ describe('Preference quiz flow (User Stories 3 & 4)', () => {
     expect(utils.getByText('Church Quiz')).toBeTruthy();
   });
 });
+
+describe('Retake / update preferences (User Stories 15 & 26)', () => {
+  test('results screen offers Update Preferences, which reopens the quiz pre-filled', async () => {
+    const utils = await signIn();
+    answerQuiz(utils, 'Nondenominational', 'Contemporary', '5');
+    fireEvent.press(utils.getByTestId('btn-submit-quiz'));
+
+    // Results screen shows the retake button.
+    expect(utils.getByTestId('btn-retake-quiz')).toBeTruthy();
+
+    // Pressing it reopens the quiz in "update" mode with answers pre-filled.
+    fireEvent.press(utils.getByTestId('btn-retake-quiz'));
+    expect(utils.getByText('Update Your Preferences')).toBeTruthy();
+
+    // Previous answers are already selected.
+    expect(utils.getByTestId('option-denomination-Nondenominational').props.accessibilityState).toEqual({
+      checked: true,
+    });
+    expect(utils.getByTestId('option-worshipStyle-Contemporary').props.accessibilityState).toEqual({
+      checked: true,
+    });
+    expect(utils.getByTestId('option-maxDistance-5').props.accessibilityState).toEqual({
+      checked: true,
+    });
+
+    // Submit button is enabled immediately (nothing to answer) and says "Update Preferences".
+    const submit = utils.getByTestId('btn-submit-quiz');
+    expect(submit.props.accessibilityState).toEqual({ disabled: false });
+    expect(utils.getByText('Update Preferences')).toBeTruthy();
+  });
+
+  test('changing an answer on retake updates the recommendations', async () => {
+    const utils = await signIn();
+    answerQuiz(utils, 'Nondenominational', 'Contemporary', '5');
+    fireEvent.press(utils.getByTestId('btn-submit-quiz'));
+    expect(utils.getByText('Crossroads Bible Church')).toBeTruthy();
+
+    // Retake and switch to Catholic + Liturgical (Cathedral of St. Andrew).
+    fireEvent.press(utils.getByTestId('btn-retake-quiz'));
+    fireEvent.press(utils.getByTestId('option-denomination-Catholic'));
+    fireEvent.press(utils.getByTestId('option-worshipStyle-Liturgical'));
+    fireEvent.press(utils.getByTestId('btn-submit-quiz'));
+
+    expect(utils.getByText('Cathedral of St. Andrew')).toBeTruthy();
+    expect(utils.queryByText('Crossroads Bible Church')).toBeNull();
+  });
+
+  test('directory offers Update Preferences, which reopens the quiz pre-filled', async () => {
+    const utils = await signIn();
+    answerQuiz(utils, 'Nondenominational', 'Contemporary', '5');
+    fireEvent.press(utils.getByTestId('btn-submit-quiz'));
+    fireEvent.press(utils.getByTestId('btn-return-home'));
+
+    // Directory shows the update button.
+    expect(utils.getByTestId('btn-update-preferences')).toBeTruthy();
+
+    fireEvent.press(utils.getByTestId('btn-update-preferences'));
+    expect(utils.getByText('Update Your Preferences')).toBeTruthy();
+    expect(utils.getByTestId('option-denomination-Nondenominational').props.accessibilityState).toEqual({
+      checked: true,
+    });
+  });
+});
