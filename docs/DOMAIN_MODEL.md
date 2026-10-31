@@ -1,39 +1,30 @@
 ## Entities
-- User
-- Suggestion
-- Visit
-- Feedback
-- Church
-- Service
-- Ministry
-- Event
-- Administrator
+Each entity maps directly to a database table. Sample rows are shown in the diagram.
 
+| Entity | Attributes |
+|---|---|
+| User | ID, emailAddress, name, denomination, worshipStyle, serviceTime, maxDistance |
+| Church | ID, name, address, city, state, zip, denomination, worshipStyle |
+| Administrator | ID, emailAddress, name |
+| Service | ID, dayOfWeek, startTime |
+| Ministry | ID, name, description |
+| Event | ID, title, time |
+| Visit | ID, time, rating, comment |
+| Suggestion | ID, matchScore, time |
 
 ## Entity Relationships
-### Person side
-- A User has preferences (denomination, worship style, service times, max distance)
-- A User makes many Visits
-- A User attends many Events
-- A User receives many Suggestions
-
-### Suggestions (between User and Church)
-- A Suggestion belongs to one User and is for one Church
-
-### Visits and Feedback
-- A Visit is made by one User at one Church
-- A Visit is for one specific Service
-- A Visit leads to zero or one Feedback
-- A Feedback belongs to one Visit
-
-### Church side
-- A Church has a location (address, city, state, zip)
-- A Church has one or more Administrators
-- A Church offers one or more Services
-- A Church runs zero or more Ministries
-- A Church has a list of Events
-- A Ministry has many Events
-- An Event belongs to one Church and optionally to one Ministry
+| Relationship | Multiplicity |
+|---|---|
+| Church — Administrator | 1 to 1..* |
+| Church — Service | 1 to 1..* |
+| Church — Ministry | 1 to 0..* |
+| Church — Event | 1 to 0..* |
+| Ministry — Event | 0..1 to 0..* (an Event may belong to no Ministry) |
+| Church — Suggestion | 1 to 0..* |
+| User — Suggestion | 1 to 0..* |
+| User — Visit | 1 to 0..* |
+| Service — Visit | 1 to 0..* |
+| User — Event (attends) | 0..* to 0..* |
 
 
-![Domain Model](./images/Domain_Model_Screenshot2.0.png)
+![Domain Model](./images/Domain_Model_3.0.png)
