@@ -70,6 +70,24 @@ describe('PR4 Client App Tests', () => {
     expect(queryByText('Cathedral of St. Andrew')).toBeNull();
   });
 
+  test('3b. filters churches by denomination', async () => {
+    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
+
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
+
+    fireEvent.press(getByTestId('btn-denomination-Catholic'));
+
+    expect(getByText('Cathedral of St. Andrew')).toBeTruthy();
+    expect(queryByText('Crossroads Bible Church')).toBeNull();
+
+    fireEvent.press(getByTestId('btn-denomination-All'));
+    expect(getByText('Crossroads Bible Church')).toBeTruthy();
+  });
+
   test('4. [User Story 3: Favorites] toggles favorite status and filters saved churches', async () => {
     const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
       render(<HomeScreen />);
