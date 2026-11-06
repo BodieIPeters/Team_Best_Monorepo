@@ -45,6 +45,7 @@ A lot of college students, especially freshmen, have a hard time finding a churc
 26. As a student, I can update my preferences anytime, so that I don't have to start the quiz completely over.
 11. As a student, I can filter suggestions by denomination, so that I only see churches that match my beliefs.
 28. As a student, I can filter suggestions by worship style, so that I only see churches that match how I like to worship.
+
 **USER STORIES PARTIALLY IMPLEMENTED:**
 6. As a student, I can rate or leave feedback on a church, so that other students can benefit from my experience.
 8. As a student, I can save my results if I signed up, so that I don't lose my preferences.
