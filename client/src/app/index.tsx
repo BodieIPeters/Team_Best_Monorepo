@@ -62,6 +62,7 @@ export default function HomeScreen() {
   // --- Directory filters ---
   const [searchQuery, setSearchQuery] = useState('');
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
+  const [selectedDenomination, setSelectedDenomination] = useState('All');
 
   // --- Quiz flow ---
   const [screen, setScreen] = useState<Screen>('quiz');
@@ -105,6 +106,7 @@ export default function HomeScreen() {
     setPassword('');
     setSearchQuery('');
     setShowOnlyFavorites(false);
+    setSelectedDenomination('All');
     setScreen('quiz');
     setQuizAnswers(null);
   };
@@ -141,16 +143,21 @@ export default function HomeScreen() {
     );
   };
 
+  const denominationOptions = ['All', ...new Set(churches.map((church) => church.denomination))];
+
   /**
-   * Churches shown in the directory: must match the search box (by name or ZIP)
-   * and, if "Filter Favorites" is on, be saved. An empty search matches everything.
+   * Churches shown in the directory: must match the search box (by name or ZIP),
+   * the selected denomination, and, if "Filter Favorites" is on, be saved.
+   * An empty search matches everything.
    */
   const filteredChurches = churches.filter((church) => {
     const query = searchQuery.toLowerCase().trim();
     const matchesSearch =
       church.name.toLowerCase().includes(query) || church.zipcode.includes(query);
     const matchesFavorite = showOnlyFavorites ? favorites.includes(church.id) : true;
-    return matchesSearch && matchesFavorite;
+    const matchesDenomination =
+      selectedDenomination === 'All' || church.denomination === selectedDenomination;
+    return matchesSearch && matchesFavorite && matchesDenomination;
   });
 
   // PAGE 1: LANDING & LOGIN / REGISTER (User Story 1)
@@ -302,25 +309,50 @@ export default function HomeScreen() {
           testID="input-search"
         />
 
-        <TouchableOpacity
-          style={[styles.filterBtn, showOnlyFavorites && styles.filterBtnActive]}
-          onPress={() => setShowOnlyFavorites((prev) => !prev)}
-          testID="btn-toggle-favorites"
-        >
-          <Text
-            style={[styles.filterBtnText, showOnlyFavorites && styles.filterBtnTextActive]}
+        <View style={styles.filterRow}>
+          <TouchableOpacity
+            style={[styles.filterBtn, showOnlyFavorites && styles.filterBtnActive]}
+            onPress={() => setShowOnlyFavorites((prev) => !prev)}
+            testID="btn-toggle-favorites"
           >
-            {showOnlyFavorites ? 'Showing Favorites ★' : 'Filter Favorites'}
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={[styles.filterBtnText, showOnlyFavorites && styles.filterBtnTextActive]}
+            >
+              {showOnlyFavorites ? 'Showing Favorites ★' : 'Filter Favorites'}
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.updatePrefsBtn}
-          onPress={handleRetakeQuiz}
-          testID="btn-update-preferences"
-        >
-          <Text style={styles.updatePrefsText}>Update Preferences</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.updatePrefsBtn}
+            onPress={handleRetakeQuiz}
+            testID="btn-update-preferences"
+          >
+            <Text style={styles.updatePrefsText}>Update Preferences</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.denominationFilterRow}>
+          {denominationOptions.map((denomination) => (
+            <TouchableOpacity
+              key={denomination}
+              style={[
+                styles.denominationFilterBtn,
+                selectedDenomination === denomination && styles.denominationFilterBtnActive,
+              ]}
+              onPress={() => setSelectedDenomination(denomination)}
+              testID={`btn-denomination-${denomination}`}
+            >
+              <Text
+                style={[
+                  styles.denominationFilterText,
+                  selectedDenomination === denomination && styles.denominationFilterTextActive,
+                ]}
+              >
+                {denomination}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       <FlatList
@@ -408,8 +440,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     fontSize: 15,
   },
-  filterBtn: {
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: 8,
+    flexWrap: 'wrap',
+  },
+  filterBtn: {
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
@@ -420,7 +458,6 @@ const styles = StyleSheet.create({
   filterBtnText: { color: '#374151', fontSize: 13, fontWeight: '600' },
   filterBtnTextActive: { color: '#d97706' },
   updatePrefsBtn: {
-    marginTop: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
@@ -428,6 +465,27 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   updatePrefsText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  denominationFilterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  denominationFilterBtn: {
+    backgroundColor: '#e5e7eb',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  denominationFilterBtnActive: {
+    backgroundColor: '#dbeafe',
+    borderWidth: 1,
+    borderColor: '#1e3a8a',
+  },
+  denominationFilterText: { color: '#374151', fontSize: 11, fontWeight: '600' },
+  denominationFilterTextActive: { color: '#1e3a8a' },
   listContainer: { paddingHorizontal: 16, paddingBottom: 20 },
   statusBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   statusText: { marginTop: 12, color: '#4b5563' },
