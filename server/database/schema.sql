@@ -45,3 +45,35 @@ CREATE TABLE IF NOT EXISTS commitments (
     FOREIGN KEY (churchId)
         REFERENCES churches(id)
 );
+
+CREATE TABLE IF NOT EXISTS ministries (
+    id TEXT PRIMARY KEY,
+    churchId TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    targetAudience TEXT,        -- 'College', 'Youth', 'Families'
+    meetingSchedule TEXT,       
+    FOREIGN KEY (churchId)
+        REFERENCES churches(id)
+);
+
+CREATE TABLE IF NOT EXISTS services (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    churchId TEXT NOT NULL,
+    dayOfWeek TEXT NOT NULL,    
+    startTime TEXT NOT NULL,   
+    serviceType TEXT,           
+    FOREIGN KEY (churchId)
+        REFERENCES churches(id)
+);
+
+CREATE TABLE IF NOT EXISTS suggestions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    studentId TEXT NOT NULL,
+    churchId TEXT NOT NULL,
+    matchScore REAL NOT NULL,  
+    reason TEXT,                
+    createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (churchId)
+        REFERENCES churches(id)
+);
