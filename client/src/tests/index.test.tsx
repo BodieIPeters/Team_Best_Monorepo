@@ -70,6 +70,24 @@ describe('PR4 Client App Tests', () => {
     expect(queryByText('Cathedral of St. Andrew')).toBeNull();
   });
 
+  test('3b. filters churches by denomination', async () => {
+    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
+
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
+
+    fireEvent.press(getByTestId('btn-denomination-Catholic'));
+
+    expect(getByText('Cathedral of St. Andrew')).toBeTruthy();
+    expect(queryByText('Crossroads Bible Church')).toBeNull();
+
+    fireEvent.press(getByTestId('btn-denomination-All'));
+    expect(getByText('Crossroads Bible Church')).toBeTruthy();
+  });
+
   test('4. [User Story 3: Favorites] toggles favorite status and filters saved churches', async () => {
     const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
       render(<HomeScreen />);
@@ -153,7 +171,7 @@ describe('PR4 Client App Tests', () => {
     await findByPlaceholderText(SEARCH_PLACEHOLDER);
 
     // Pick Nondenominational
-    fireEvent.press(getByTestId('filter-denomination-Nondenominational'));
+    fireEvent.press(getByTestId('btn-denomination-Nondenominational'));
 
     // Nondenominational churches stay, everything else is hidden
     expect(getByText('Crossroads Bible Church')).toBeTruthy();
@@ -175,7 +193,7 @@ describe('PR4 Client App Tests', () => {
     await findByPlaceholderText(SEARCH_PLACEHOLDER);
 
     // Pick Contemporary
-    fireEvent.press(getByTestId('filter-worship-Contemporary'));
+    fireEvent.press(getByTestId('btn-worship-Contemporary'));
 
     // Contemporary churches stay, the others are hidden
     expect(getByText('Crossroads Bible Church')).toBeTruthy();
@@ -184,7 +202,7 @@ describe('PR4 Client App Tests', () => {
     expect(queryByText('Cathedral of St. Andrew')).toBeNull();
   });
 
-  test('5e. [User Story 47: Filter by denomination] pressing the same filter again clears it', async () => {
+  test('5e. [User Story 47: Filter by denomination] pressing all clears the denomination filter', async () => {
     const { getByText, getByPlaceholderText, getByTestId, findByPlaceholderText } =
       render(<HomeScreen />);
 
@@ -194,9 +212,9 @@ describe('PR4 Client App Tests', () => {
     fireEvent.press(getByTestId('btn-skip-quiz'));
     await findByPlaceholderText(SEARCH_PLACEHOLDER);
 
-    // Turn the filter on, then press it again to turn it off
-    fireEvent.press(getByTestId('filter-denomination-Catholic'));
-    fireEvent.press(getByTestId('filter-denomination-Catholic'));
+    // Turn the filter on, then press All to turn it off
+    fireEvent.press(getByTestId('btn-denomination-Catholic'));
+    fireEvent.press(getByTestId('btn-denomination-All'));
 
     // All churches are back
     expect(getByText('Cathedral of St. Andrew')).toBeTruthy();
@@ -215,8 +233,8 @@ describe('PR4 Client App Tests', () => {
     await findByPlaceholderText(SEARCH_PLACEHOLDER);
 
     // Nondenominational AND Contemporary
-    fireEvent.press(getByTestId('filter-denomination-Nondenominational'));
-    fireEvent.press(getByTestId('filter-worship-Contemporary'));
+    fireEvent.press(getByTestId('btn-denomination-Nondenominational'));
+    fireEvent.press(getByTestId('btn-worship-Contemporary'));
 
     // Only churches that match both stay
     expect(getByText('Crossroads Bible Church')).toBeTruthy();
