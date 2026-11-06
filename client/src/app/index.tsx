@@ -50,6 +50,15 @@ type Screen = 'quiz' | 'results' | 'directory';
 const DENOMINATIONS = ['Catholic', 'Nondenominational', 'Christian Reformed', 'Congregational'];
 const WORSHIP_STYLES = ['Contemporary', 'Traditional', 'Liturgical', 'Blended'];
 
+/** Steps shown in the "How does this app work?" box on the sign-in screen (SRS/Kanban story #62). */
+const HOW_IT_WORKS_STEPS = [
+  'Create an account or sign in.',
+  'Answer a few questions about what you want in a church.',
+  'See churches that match your answers.',
+  'Search, filter, and save your favorites.',
+  'Leave a comment to help other students.',
+];
+
 export default function HomeScreen() {
   // --- Sign-in state ---
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -68,6 +77,7 @@ export default function HomeScreen() {
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [selectedDenomination, setSelectedDenomination] = useState('');
   const [selectedWorshipStyle, setSelectedWorshipStyle] = useState('');
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
 
   // --- Quiz flow ---
   const [screen, setScreen] = useState<Screen>('quiz');
@@ -223,6 +233,27 @@ export default function HomeScreen() {
               {isRegistering ? 'Register & Continue' : 'Sign In'}
             </Text>
           </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.howItWorksBtn}
+            onPress={() => setShowHowItWorks((prev) => !prev)}
+            testID="btn-how-it-works"
+          >
+            <Text style={styles.howItWorksBtnText}>
+              {showHowItWorks ? 'Hide how it works' : 'How does this app work?'}
+            </Text>
+          </TouchableOpacity>
+
+          {showHowItWorks && (
+            <View style={styles.howItWorksBox} testID="how-it-works-box">
+              {HOW_IT_WORKS_STEPS.map((step, index) => (
+                <Text key={step} style={styles.howItWorksStep}>
+                  {index + 1}. {step}
+                </Text>
+              ))}
+            </View>
+          )}
+
         </View>
       </KeyboardAvoidingView>
     );
@@ -478,6 +509,10 @@ const styles = StyleSheet.create({
   filterBtnText: { color: '#374151', fontSize: 13, fontWeight: '600' },
   filterBtnTextActive: { color: '#d97706' },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  howItWorksBtn: { marginTop: 12, alignItems: 'center' },
+  howItWorksBtnText: { color: '#1e3a8a', fontWeight: '600' },
+  howItWorksBox: { marginTop: 12, padding: 12, backgroundColor: '#f9fafb', borderRadius: 8 },
+  howItWorksStep: { color: '#374151', marginBottom: 6 },
   updatePrefsBtn: {
     marginTop: 8,
     paddingVertical: 8,

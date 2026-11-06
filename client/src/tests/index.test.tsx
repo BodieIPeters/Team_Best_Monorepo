@@ -225,6 +225,35 @@ describe('PR4 Client App Tests', () => {
     expect(queryByText('Madison Square Church')).toBeNull();
   });
 
+  
+  // --- HOW THE APP WORKS (User Story 62) ---
+
+  test('5g. [User Story 62: How it works] shows the steps when the button is pressed', () => {
+    const { getByText, getByTestId, queryByTestId } = render(<HomeScreen />);
+
+    // Steps are hidden at first
+    expect(queryByTestId('how-it-works-box')).toBeNull();
+    expect(getByText('How does this app work?')).toBeTruthy();
+
+    // Press the button to show the steps
+    fireEvent.press(getByTestId('btn-how-it-works'));
+
+    expect(getByTestId('how-it-works-box')).toBeTruthy();
+    expect(getByText(/Create an account or sign in/)).toBeTruthy();
+    expect(getByText(/See churches that match your answers/)).toBeTruthy();
+    expect(getByText('Hide how it works')).toBeTruthy();
+  });
+
+  test('5h. [User Story 62: How it works] pressing the button again hides the steps', () => {
+    const { getByTestId, queryByTestId } = render(<HomeScreen />);
+
+    // Show, then hide
+    fireEvent.press(getByTestId('btn-how-it-works'));
+    fireEvent.press(getByTestId('btn-how-it-works'));
+
+    expect(queryByTestId('how-it-works-box')).toBeNull();
+  });
+
   // --- SERVER CONNECTION ---
 
   test('6. shows an error with Retry when the server is unreachable, and recovers on Retry', async () => {
