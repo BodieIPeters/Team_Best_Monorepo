@@ -46,6 +46,10 @@ import { recommendChurches } from '@/utils/recommendChurches';
 /** Which page a signed-in student is on. Sign-in (and every re-sign-in) starts at 'quiz'. */
 type Screen = 'quiz' | 'results' | 'directory';
 
+/** Options shown as filter buttons in the directory (match the church data). */
+const DENOMINATIONS = ['Catholic', 'Nondenominational', 'Christian Reformed', 'Congregational'];
+const WORSHIP_STYLES = ['Contemporary', 'Traditional', 'Liturgical', 'Blended'];
+
 export default function HomeScreen() {
   // --- Sign-in state ---
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -59,9 +63,11 @@ export default function HomeScreen() {
   const [error, setError] = useState('');
   const [favorites, setFavorites] = useState<string[]>([]); // IDs of saved churches
 
-  // --- Directory filters ---
+    // --- Directory filters ---
   const [searchQuery, setSearchQuery] = useState('');
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
+  const [selectedDenomination, setSelectedDenomination] = useState('');
+  const [selectedWorshipStyle, setSelectedWorshipStyle] = useState('');
 
   // --- Quiz flow ---
   const [screen, setScreen] = useState<Screen>('quiz');
@@ -105,6 +111,8 @@ export default function HomeScreen() {
     setPassword('');
     setSearchQuery('');
     setShowOnlyFavorites(false);
+    setSelectedDenomination('');
+    setSelectedWorshipStyle('');
     setScreen('quiz');
     setQuizAnswers(null);
   };
@@ -149,8 +157,12 @@ export default function HomeScreen() {
     const query = searchQuery.toLowerCase().trim();
     const matchesSearch =
       church.name.toLowerCase().includes(query) || church.zipcode.includes(query);
-    const matchesFavorite = showOnlyFavorites ? favorites.includes(church.id) : true;
-    return matchesSearch && matchesFavorite;
+        const matchesFavorite = showOnlyFavorites ? favorites.includes(church.id) : true;
+    const matchesDenomination =
+      selectedDenomination === '' || church.denomination === selectedDenomination;
+    const matchesWorshipStyle =
+      selectedWorshipStyle === '' || church.worshipStyle === selectedWorshipStyle;
+    return matchesSearch && matchesFavorite && matchesDenomination && matchesWorshipStyle;
   });
 
   // PAGE 1: LANDING & LOGIN / REGISTER (User Story 1)
@@ -314,6 +326,52 @@ export default function HomeScreen() {
           </Text>
         </TouchableOpacity>
 
+        
+        <View style={styles.filterRow}>
+          {DENOMINATIONS.map((name) => (
+            <TouchableOpacity
+              key={name}
+              style={[styles.filterBtn, selectedDenomination === name && styles.filterBtnActive]}
+              onPress={() => setSelectedDenomination((prev) => (prev === name ? '' : name))}
+              testID={`filter-denomination-${name}`}
+            >
+              <Text
+                style={[
+                  styles.filterBtnText,
+                  selectedDenomination === name && styles.filterBtnTextActive,
+                ]}
+              >
+                {name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.filterRow}>
+          {WORSHIP_STYLES.map((worshipStyle) => (
+            <TouchableOpacity
+              key={worshipStyle}
+              style={[
+                styles.filterBtn,
+                selectedWorshipStyle === worshipStyle && styles.filterBtnActive,
+              ]}
+              onPress={() =>
+                setSelectedWorshipStyle((prev) => (prev === worshipStyle ? '' : worshipStyle))
+              }
+              testID={`filter-worship-${worshipStyle}`}
+            >
+              <Text
+                style={[
+                  styles.filterBtnText,
+                  selectedWorshipStyle === worshipStyle && styles.filterBtnTextActive,
+                ]}
+              >
+                {worshipStyle}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         <TouchableOpacity
           style={styles.updatePrefsBtn}
           onPress={handleRetakeQuiz}
@@ -419,6 +477,7 @@ const styles = StyleSheet.create({
   filterBtnActive: { backgroundColor: '#fef3c7', borderWidth: 1, borderColor: '#f59e0b' },
   filterBtnText: { color: '#374151', fontSize: 13, fontWeight: '600' },
   filterBtnTextActive: { color: '#d97706' },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   updatePrefsBtn: {
     marginTop: 8,
     paddingVertical: 8,

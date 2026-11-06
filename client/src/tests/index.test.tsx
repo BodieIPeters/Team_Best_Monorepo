@@ -139,6 +139,92 @@ describe('PR4 Client App Tests', () => {
     expect(sharedContent.message).toContain('Sun 8:30 AM, 10:30 AM, 5:30 PM');
   });
 
+  
+  // --- DIRECTORY FILTERS (User Stories 47 & 48) ---
+
+  test('5c. [User Story 47: Filter by denomination] shows only churches of the chosen denomination', async () => {
+    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
+
+    // Login
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
+
+    // Pick Nondenominational
+    fireEvent.press(getByTestId('filter-denomination-Nondenominational'));
+
+    // Nondenominational churches stay, everything else is hidden
+    expect(getByText('Crossroads Bible Church')).toBeTruthy();
+    expect(getByText('Calvary Church')).toBeTruthy();
+    expect(getByText('Ada Bible Church (East Paris)')).toBeTruthy();
+    expect(queryByText('Cathedral of St. Andrew')).toBeNull();
+    expect(queryByText('Madison Square Church')).toBeNull();
+    expect(queryByText('Mayflower Congregational Church')).toBeNull();
+  });
+
+  test('5d. [User Story 48: Filter by worship style] shows only churches with the chosen worship style', async () => {
+    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
+
+    // Login
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
+
+    // Pick Contemporary
+    fireEvent.press(getByTestId('filter-worship-Contemporary'));
+
+    // Contemporary churches stay, the others are hidden
+    expect(getByText('Crossroads Bible Church')).toBeTruthy();
+    expect(getByText('Madison Square Church')).toBeTruthy();
+    expect(getByText('Ada Bible Church (East Paris)')).toBeTruthy();
+    expect(queryByText('Cathedral of St. Andrew')).toBeNull();
+  });
+
+  test('5e. [User Story 47: Filter by denomination] pressing the same filter again clears it', async () => {
+    const { getByText, getByPlaceholderText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
+
+    // Login
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
+
+    // Turn the filter on, then press it again to turn it off
+    fireEvent.press(getByTestId('filter-denomination-Catholic'));
+    fireEvent.press(getByTestId('filter-denomination-Catholic'));
+
+    // All churches are back
+    expect(getByText('Cathedral of St. Andrew')).toBeTruthy();
+    expect(getByText('Crossroads Bible Church')).toBeTruthy();
+    expect(getByText('Mayflower Congregational Church')).toBeTruthy();
+  });
+
+  test('5f. [User Stories 47 & 48] denomination and worship style filters work together', async () => {
+    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
+
+    // Login
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
+
+    // Nondenominational AND Contemporary
+    fireEvent.press(getByTestId('filter-denomination-Nondenominational'));
+    fireEvent.press(getByTestId('filter-worship-Contemporary'));
+
+    // Only churches that match both stay
+    expect(getByText('Crossroads Bible Church')).toBeTruthy();
+    expect(getByText('Ada Bible Church (East Paris)')).toBeTruthy();
+    expect(queryByText('Calvary Church')).toBeNull();
+    expect(queryByText('Madison Square Church')).toBeNull();
+  });
+
   // --- SERVER CONNECTION ---
 
   test('6. shows an error with Retry when the server is unreachable, and recovers on Retry', async () => {
