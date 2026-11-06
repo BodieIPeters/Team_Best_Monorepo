@@ -46,6 +46,16 @@ import { recommendChurches } from '@/utils/recommendChurches';
 /** Which page a signed-in student is on. Sign-in (and every re-sign-in) starts at 'quiz'. */
 type Screen = 'quiz' | 'results' | 'directory';
 
+
+/** Steps shown in the "How does this app work?" box on the sign-in screen (Kanban story #62). */
+const HOW_IT_WORKS_STEPS = [
+  'Create an account or sign in.',
+  'Answer a few questions about what you want in a church.',
+  'See churches that match your answers.',
+  'Search, filter, and save your favorites.',
+  'Leave a comment to help other students.',
+];
+
 export default function HomeScreen() {
   // --- Sign-in state ---
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -63,6 +73,8 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [selectedDenomination, setSelectedDenomination] = useState('All');
+  const [selectedWorshipStyle, setSelectedWorshipStyle] = useState('All');
+    const [showHowItWorks, setShowHowItWorks] = useState(false);
 
   // --- Quiz flow ---
   const [screen, setScreen] = useState<Screen>('quiz');
@@ -107,6 +119,7 @@ export default function HomeScreen() {
     setSearchQuery('');
     setShowOnlyFavorites(false);
     setSelectedDenomination('All');
+    setSelectedWorshipStyle('All');
     setScreen('quiz');
     setQuizAnswers(null);
   };
@@ -144,6 +157,7 @@ export default function HomeScreen() {
   };
 
   const denominationOptions = ['All', ...new Set(churches.map((church) => church.denomination))];
+  const worshipStyleOptions = ['All', ...new Set(churches.map((church) => church.worshipStyle))];
 
   /**
    * Churches shown in the directory: must match the search box (by name or ZIP),
@@ -157,9 +171,10 @@ export default function HomeScreen() {
     const matchesFavorite = showOnlyFavorites ? favorites.includes(church.id) : true;
     const matchesDenomination =
       selectedDenomination === 'All' || church.denomination === selectedDenomination;
-    return matchesSearch && matchesFavorite && matchesDenomination;
+        const matchesWorshipStyle =
+      selectedWorshipStyle === 'All' || church.worshipStyle === selectedWorshipStyle;
+    return matchesSearch && matchesFavorite && matchesDenomination && matchesWorshipStyle;
   });
-
   // PAGE 1: LANDING & LOGIN / REGISTER (User Story 1)
   if (!isLoggedIn) {
     return (
@@ -218,6 +233,27 @@ export default function HomeScreen() {
               {isRegistering ? 'Register & Continue' : 'Sign In'}
             </Text>
           </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.howItWorksBtn}
+            onPress={() => setShowHowItWorks((prev) => !prev)}
+            testID="btn-how-it-works"
+          >
+            <Text style={styles.howItWorksBtnText}>
+              {showHowItWorks ? 'Hide how it works' : 'How does this app work?'}
+            </Text>
+          </TouchableOpacity>
+
+          {showHowItWorks && (
+            <View style={styles.howItWorksBox} testID="how-it-works-box">
+              {HOW_IT_WORKS_STEPS.map((step, index) => (
+                <Text key={step} style={styles.howItWorksStep}>
+                  {index + 1}. {step}
+                </Text>
+              ))}
+            </View>
+          )}
+
         </View>
       </KeyboardAvoidingView>
     );
@@ -353,7 +389,32 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
+      
+      
+        <View style={styles.denominationFilterRow}>
+          {worshipStyleOptions.map((worshipStyle) => (
+            <TouchableOpacity
+              key={worshipStyle}
+              style={[
+                styles.denominationFilterBtn,
+                selectedWorshipStyle === worshipStyle && styles.denominationFilterBtnActive,
+              ]}
+              onPress={() => setSelectedWorshipStyle(worshipStyle)}
+              testID={`btn-worship-${worshipStyle}`}
+            >
+              <Text
+                style={[
+                  styles.denominationFilterText,
+                  selectedWorshipStyle === worshipStyle && styles.denominationFilterTextActive,
+                ]}
+              >
+                {worshipStyle}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
+
 
       <FlatList
         data={filteredChurches}
@@ -486,6 +547,10 @@ const styles = StyleSheet.create({
   },
   denominationFilterText: { color: '#374151', fontSize: 11, fontWeight: '600' },
   denominationFilterTextActive: { color: '#1e3a8a' },
+  howItWorksBtn: { marginTop: 12, alignItems: 'center' },
+  howItWorksBtnText: { color: '#1e3a8a', fontWeight: '600' },
+  howItWorksBox: { marginTop: 12, padding: 12, backgroundColor: '#f9fafb', borderRadius: 8 },
+  howItWorksStep: { color: '#374151', marginBottom: 6 },
   listContainer: { paddingHorizontal: 16, paddingBottom: 20 },
   statusBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   statusText: { marginTop: 12, color: '#4b5563' },
