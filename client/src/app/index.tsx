@@ -56,6 +56,15 @@ const HOW_IT_WORKS_STEPS = [
   'Leave a comment to help other students.',
 ];
 
+
+/** Distance choices for the directory filter (Kanban story #46). null means any distance. */
+const DISTANCE_OPTIONS: { label: string; miles: number | null }[] = [
+  { label: 'Any distance', miles: null },
+  { label: 'Within 3 mi', miles: 3 },
+  { label: 'Within 5 mi', miles: 5 },
+  { label: 'Within 10 mi', miles: 10 },
+];
+
 export default function HomeScreen() {
   // --- Sign-in state ---
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -74,7 +83,8 @@ export default function HomeScreen() {
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [selectedDenomination, setSelectedDenomination] = useState('All');
   const [selectedWorshipStyle, setSelectedWorshipStyle] = useState('All');
-    const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
+    const [maxDistance, setMaxDistance] = useState<number | null>(null); // null = any distance
 
   // --- Quiz flow ---
   const [screen, setScreen] = useState<Screen>('quiz');
@@ -120,6 +130,7 @@ export default function HomeScreen() {
     setShowOnlyFavorites(false);
     setSelectedDenomination('All');
     setSelectedWorshipStyle('All');
+    setMaxDistance(null);
     setScreen('quiz');
     setQuizAnswers(null);
   };
@@ -173,7 +184,8 @@ export default function HomeScreen() {
       selectedDenomination === 'All' || church.denomination === selectedDenomination;
         const matchesWorshipStyle =
       selectedWorshipStyle === 'All' || church.worshipStyle === selectedWorshipStyle;
-    return matchesSearch && matchesFavorite && matchesDenomination && matchesWorshipStyle;
+      const matchesDistance = maxDistance === null || church.distanceMiles <= maxDistance;
+    return matchesSearch && matchesFavorite && matchesDenomination && matchesWorshipStyle && matchesDistance;
   });
   // PAGE 1: LANDING & LOGIN / REGISTER (User Story 1)
   if (!isLoggedIn) {
@@ -413,6 +425,30 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
+        
+        <View style={styles.denominationFilterRow}>
+          {DISTANCE_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option.label}
+              style={[
+                styles.denominationFilterBtn,
+                maxDistance === option.miles && styles.denominationFilterBtnActive,
+              ]}
+              onPress={() => setMaxDistance(option.miles)}
+              testID={`btn-distance-${option.miles ?? 'any'}`}
+            >
+              <Text
+                style={[
+                  styles.denominationFilterText,
+                  maxDistance === option.miles && styles.denominationFilterTextActive,
+                ]}
+              >
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
       </View>
 
 

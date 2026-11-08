@@ -244,6 +244,73 @@ describe('PR4 Client App Tests', () => {
   });
 
   
+  // --- DISTANCE FILTER (User Story 46) ---
+
+  test('5i. [User Story 46: Filter by distance] Within 3 mi shows only nearby churches', async () => {
+    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
+
+    // Login
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
+
+    // Pick Within 3 mi
+    fireEvent.press(getByTestId('btn-distance-3'));
+
+    // 1.8, 2.3 and 3.0 miles stay. 3.8, 5.1 and 6.2 miles are hidden.
+    expect(getByText('Cathedral of St. Andrew')).toBeTruthy();
+    expect(getByText('Crossroads Bible Church')).toBeTruthy();
+    expect(getByText('Madison Square Church')).toBeTruthy();
+    expect(queryByText('Mayflower Congregational Church')).toBeNull();
+    expect(queryByText('Calvary Church')).toBeNull();
+    expect(queryByText('Ada Bible Church (East Paris)')).toBeNull();
+  });
+
+  test('5j. [User Story 46: Filter by distance] Within 5 mi, and Any distance brings everything back', async () => {
+    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
+
+    // Login
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
+
+    // Pick Within 5 mi: Mayflower (3.8) is in, Calvary (5.1) is out
+    fireEvent.press(getByTestId('btn-distance-5'));
+    expect(getByText('Mayflower Congregational Church')).toBeTruthy();
+    expect(queryByText('Calvary Church')).toBeNull();
+    expect(queryByText('Ada Bible Church (East Paris)')).toBeNull();
+
+    // Any distance shows every church again
+    fireEvent.press(getByTestId('btn-distance-any'));
+    expect(getByText('Calvary Church')).toBeTruthy();
+    expect(getByText('Ada Bible Church (East Paris)')).toBeTruthy();
+  });
+
+  test('5k. [User Stories 46 & 47] distance and denomination filters work together', async () => {
+    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
+
+    // Login
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
+
+    // Nondenominational AND within 5 mi
+    fireEvent.press(getByTestId('btn-denomination-Nondenominational'));
+    fireEvent.press(getByTestId('btn-distance-5'));
+
+    // Only Crossroads (2.3 mi) matches both. Calvary is 5.1 mi and Ada is 6.2 mi.
+    expect(getByText('Crossroads Bible Church')).toBeTruthy();
+    expect(queryByText('Calvary Church')).toBeNull();
+    expect(queryByText('Ada Bible Church (East Paris)')).toBeNull();
+    expect(queryByText('Cathedral of St. Andrew')).toBeNull();
+  });
+  
   // --- HOW THE APP WORKS (User Story 62) ---
 
   test('5g. [User Story 62: How it works] shows the steps when the button is pressed', () => {
