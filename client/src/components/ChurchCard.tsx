@@ -15,6 +15,8 @@ interface ChurchCardProps {
   isFavorite: boolean;
   onToggleFavorite: (id: string) => void;
   onAddFeedback: (id: string, feedback: string) => void;
+  onEditFeedback?: (id: string, index: number, newFeedback: string) => void;
+  onDeleteFeedback?: (id: string, index: number) => void;
 }
 
 export const ChurchCard: React.FC<ChurchCardProps> = ({
@@ -22,9 +24,14 @@ export const ChurchCard: React.FC<ChurchCardProps> = ({
   isFavorite,
   onToggleFavorite,
   onAddFeedback,
+  onEditFeedback,
+  onDeleteFeedback,
 }) => {
   const [feedbackInput, setFeedbackInput] = useState('');
   const [showFeedbackInput, setShowFeedbackInput] = useState(false);
+
+  const [editingIndex, setEditingIndex] = useState<number | null>(null); // which comment is being edited
+  const [editInput, setEditInput] = useState('');
 
   const handleFeedbackSubmit = () => {
     if (feedbackInput.trim()) {
@@ -32,6 +39,29 @@ export const ChurchCard: React.FC<ChurchCardProps> = ({
       setFeedbackInput('');
       setShowFeedbackInput(false);
     }
+  };
+
+  
+  const startEditing = (index: number, text: string) => {
+    setEditingIndex(index);
+    setEditInput(text);
+  };
+
+  const cancelEditing = () => {
+    setEditingIndex(null);
+    setEditInput('');
+  };
+
+  const handleEditSave = () => {
+    if (editingIndex !== null && editInput.trim()) {
+      onEditFeedback?.(church.id, editingIndex, editInput.trim());
+      cancelEditing();
+    }
+  };
+
+  const handleDelete = (index: number) => {
+    onDeleteFeedback?.(church.id, index);
+    cancelEditing();
   };
 
   const handleShare = async () => {
@@ -89,11 +119,52 @@ export const ChurchCard: React.FC<ChurchCardProps> = ({
         {church.userFeedback.length === 0 ? (
           <Text style={styles.emptyFeedback}>No user feedback yet.</Text>
         ) : (
-          church.userFeedback.map((fb, idx) => (
-            <Text key={idx} style={styles.feedbackItem}>
-              • {fb}
-            </Text>
-          ))
+                   church.userFeedback.map((fb, idx) =>
+            editingIndex === idx ? (
+              <View key={idx} style={styles.feedbackInputRow}>
+                <TextInput
+                  style={styles.feedbackInput}
+                  value={editInput}
+                  onChangeText={setEditInput}
+                  testID={`edit-input-${church.id}`}
+                />
+                <TouchableOpacity
+                  style={styles.addBtn}
+                  onPress={handleEditSave}
+                  testID={`save-edit-${church.id}`}
+                >
+                  <Text style={styles.addBtnText}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={cancelEditing}
+                  testID={`cancel-edit-${church.id}`}
+                >
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View key={idx} style={styles.feedbackRow}>
+                <Text style={styles.feedbackText}>• {fb}</Text>
+                {onEditFeedback && (
+                  <TouchableOpacity
+                    onPress={() => startEditing(idx, fb)}
+                    testID={`edit-feedback-${church.id}-${idx}`}
+                  >
+                    <Text style={styles.feedbackActionText}>Edit</Text>
+                  </TouchableOpacity>
+                )}
+                {onDeleteFeedback && (
+                  <TouchableOpacity
+                    onPress={() => handleDelete(idx)}
+                    testID={`delete-feedback-${church.id}-${idx}`}
+                  >
+                    <Text style={styles.feedbackDeleteText}>Delete</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )
+          ) 
         )}
 
         {showFeedbackInput ? (
@@ -201,4 +272,11 @@ const styles = StyleSheet.create({
   addBtnText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
   toggleFeedbackBtn: { marginTop: 6 },
   toggleFeedbackText: { fontSize: 12, color: '#2563eb', fontWeight: '600' },
+
+  feedbackRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 2 },
+  feedbackText: { flex: 1, fontSize: 12, color: '#4b5563' },
+  feedbackActionText: { fontSize: 12, color: '#2563eb', fontWeight: '600', marginLeft: 8 },
+  feedbackDeleteText: { fontSize: 12, color: '#dc2626', fontWeight: '600', marginLeft: 8 },
+  cancelBtn: { paddingHorizontal: 10, paddingVertical: 6, marginLeft: 6 },
+  cancelBtnText: { color: '#6b7280', fontSize: 12, fontWeight: 'bold' },
 });
