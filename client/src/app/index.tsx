@@ -155,6 +155,38 @@ export default function HomeScreen() {
       )
     );
   };
+  
+    /** Replaces one feedback comment on a church (Kanban story #54). */
+  const handleEditFeedback = (id: string, index: number, newFeedback: string) => {
+    setChurches((prevChurches) =>
+      prevChurches.map((church) =>
+        church.id === id
+          ? {
+              ...church,
+              userFeedback: church.userFeedback.map((fb, i) =>
+                i === index ? newFeedback : fb
+              ),
+            }
+          : church
+      )
+    );
+  };
+
+  /** Removes one feedback comment from a church (Kanban story #54). */
+  const handleDeleteFeedback = (id: string, index: number) => {
+    setChurches((prevChurches) =>
+      prevChurches.map((church) =>
+        church.id === id
+          ? {
+              ...church,
+              userFeedback: church.userFeedback.filter((_, i) => i !== index),
+            }
+          : church
+      )
+    );
+  };
+
+
 
   const denominationOptions = ['All', ...new Set(churches.map((church) => church.denomination))];
   const worshipStyleOptions = ['All', ...new Set(churches.map((church) => church.worshipStyle))];
@@ -431,6 +463,8 @@ export default function HomeScreen() {
             isFavorite={favorites.includes(item.id)}
             onToggleFavorite={toggleFavorite}
             onAddFeedback={handleAddFeedback}
+            onEditFeedback={handleEditFeedback}
+            onDeleteFeedback={handleDeleteFeedback}
           />
         )}
       />
