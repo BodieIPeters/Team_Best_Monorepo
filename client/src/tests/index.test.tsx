@@ -133,6 +133,54 @@ describe('PR4 Client App Tests', () => {
     expect(getByText('• Great choir music on Sunday morning!')).toBeTruthy();
   });
 
+    test('5l. [Story 54: Edit comment] lets a user change an existing comment', async () => {
+    const { getByText, queryByText, getByPlaceholderText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
+
+    // Login
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
+
+    // Church 1 starts with one comment, so press Edit on it (comment number 0)
+    fireEvent.press(getByTestId('edit-feedback-1-0'));
+
+    // Change the text and save
+    fireEvent.changeText(getByTestId('edit-input-1'), 'Updated comment text');
+    fireEvent.press(getByTestId('save-edit-1'));
+
+    // The new text shows and the old text is gone
+    expect(getByText('• Updated comment text')).toBeTruthy();
+    expect(
+      queryByText('• Welcoming community with active young adult and college groups.')
+    ).toBeNull();
+  });
+
+  test('5m. [Story 54: Delete comment] lets a user delete an existing comment', async () => {
+    const { queryByText, getByPlaceholderText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
+
+    // Login
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
+
+    // The seeded comment is there at first
+    expect(
+      queryByText('• Welcoming community with active young adult and college groups.')
+    ).toBeTruthy();
+
+    // Delete it
+    fireEvent.press(getByTestId('delete-feedback-1-0'));
+
+    // It is gone
+    expect(
+      queryByText('• Welcoming community with active young adult and college groups.')
+    ).toBeNull();
+  });
+
   test('5b. [User Story 28: Share] opens the share menu with the church info when Share is pressed', async () => {
     const { getByPlaceholderText, getByTestId, findByPlaceholderText } = render(<HomeScreen />);
 
