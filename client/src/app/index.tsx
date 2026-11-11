@@ -84,8 +84,8 @@ export default function HomeScreen() {
   const [selectedDenomination, setSelectedDenomination] = useState('All');
   const [selectedWorshipStyle, setSelectedWorshipStyle] = useState('All');
   const [showHowItWorks, setShowHowItWorks] = useState(false);
-    const [maxDistance, setMaxDistance] = useState<number | null>(null); // null = any distance
-
+  const [maxDistance, setMaxDistance] = useState<number | null>(null); // null = any distance
+  const [notificationsOn, setNotificationsOn] = useState(true); // notifications switch (stories #55 & #56)
   // --- Quiz flow ---
   const [screen, setScreen] = useState<Screen>('quiz');
   // null until the quiz is submitted; skipping the quiz leaves it null.
@@ -131,6 +131,7 @@ export default function HomeScreen() {
     setSelectedDenomination('All');
     setSelectedWorshipStyle('All');
     setMaxDistance(null);
+    setNotificationsOn(true);
     setScreen('quiz');
     setQuizAnswers(null);
   };
@@ -409,6 +410,19 @@ export default function HomeScreen() {
           >
             <Text style={styles.updatePrefsText}>Update Preferences</Text>
           </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.filterBtn, notificationsOn && styles.filterBtnActive]}
+            onPress={() => setNotificationsOn((prev) => !prev)}
+            testID="btn-toggle-notifications"
+          >
+            <Text
+              style={[styles.filterBtnText, notificationsOn && styles.filterBtnTextActive]}
+            >
+              {notificationsOn ? 'Notifications: On 🔔' : 'Notifications: Off 🔕'}
+            </Text>
+          </TouchableOpacity>
+
         </View>
 
         <View style={styles.denominationFilterRow}>
