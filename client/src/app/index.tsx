@@ -63,6 +63,7 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [selectedDenomination, setSelectedDenomination] = useState('All');
+  const [selectedLanguage, setSelectedLanguage] = useState('All');
 
   // --- Quiz flow ---
   const [screen, setScreen] = useState<Screen>('quiz');
@@ -107,6 +108,7 @@ export default function HomeScreen() {
     setSearchQuery('');
     setShowOnlyFavorites(false);
     setSelectedDenomination('All');
+    setSelectedLanguage('All');
     setScreen('quiz');
     setQuizAnswers(null);
   };
@@ -144,10 +146,14 @@ export default function HomeScreen() {
   };
 
   const denominationOptions = ['All', ...new Set(churches.map((church) => church.denomination))];
+  const languageOptions = [
+    'All',
+    ...new Set(churches.flatMap((church) => church.languages)),
+  ];
 
   /**
    * Churches shown in the directory: must match the search box (by name or ZIP),
-   * the selected denomination, and, if "Filter Favorites" is on, be saved.
+   * the selected denomination and language, and, if "Filter Favorites" is on, be saved.
    * An empty search matches everything.
    */
   const filteredChurches = churches.filter((church) => {
@@ -157,7 +163,9 @@ export default function HomeScreen() {
     const matchesFavorite = showOnlyFavorites ? favorites.includes(church.id) : true;
     const matchesDenomination =
       selectedDenomination === 'All' || church.denomination === selectedDenomination;
-    return matchesSearch && matchesFavorite && matchesDenomination;
+    const matchesLanguage =
+      selectedLanguage === 'All' || church.languages.includes(selectedLanguage);
+    return matchesSearch && matchesFavorite && matchesDenomination && matchesLanguage;
   });
 
   // PAGE 1: LANDING & LOGIN / REGISTER (User Story 1)
@@ -353,6 +361,30 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
+
+        <View style={styles.languageFilterRow}>
+          <Text style={styles.languageFilterLabel}>Language:</Text>
+          {languageOptions.map((language) => (
+            <TouchableOpacity
+              key={language}
+              style={[
+                styles.denominationFilterBtn,
+                selectedLanguage === language && styles.denominationFilterBtnActive,
+              ]}
+              onPress={() => setSelectedLanguage(language)}
+              testID={`btn-language-${language}`}
+            >
+              <Text
+                style={[
+                  styles.denominationFilterText,
+                  selectedLanguage === language && styles.denominationFilterTextActive,
+                ]}
+              >
+                {language}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       <FlatList
@@ -471,6 +503,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 4,
   },
+  languageFilterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  languageFilterLabel: { color: '#374151', fontSize: 12, fontWeight: '600', marginRight: 8 },
   denominationFilterBtn: {
     backgroundColor: '#e5e7eb',
     borderRadius: 999,

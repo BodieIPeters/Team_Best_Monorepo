@@ -73,6 +73,7 @@ describe("GET /api/churches", () => {
     expect(church).toHaveProperty("state");
     expect(church).toHaveProperty("zipcode");
     expect(church).toHaveProperty("denomination");
+    expect(church.languages).toEqual(expect.any(Array));
     expect(church).toHaveProperty("serviceTimes");
     expect(church).toHaveProperty("worshipStyle");
     expect(church).toHaveProperty("distanceMiles");
