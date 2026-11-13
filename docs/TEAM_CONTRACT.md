@@ -15,7 +15,7 @@
 - Be transparent — no silent slipping on deadlines.
 
 ## Meeting Schedule
-- Tuesday, 6:15–6:45pm, Hekman Library. Anyone who can't attend in person joins via Teams.
+- Friday afternoons during class. Anyone who can't attend in person joins via Teams.
 
 ## Responsibilities
 - Each 3-week sprint has a Project Manager (runs meetings, admin tasks) and a Lead Engineer (PR reviews/merges).
