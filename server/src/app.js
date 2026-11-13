@@ -2,9 +2,6 @@
 const express = require("express");
 const cors = require("cors");
 const { db } = require("./mockData");
-const {
-  searchChurches
-} = require("../database/churchQueries");
 
 const app = express();
 
@@ -47,26 +44,6 @@ app.get("/api/churches", (req, res) => {
 
   let results = [...db.churches];
 
-
-app.get("/api/churches/search", (req, res) => {
-  try {
-    const name = req.query.name;
-
-    if (typeof name !== "string" || !name.trim()) {
-      return res.status(400).json({
-        error: "Church name is required"
-      });
-    }
-
-    const churches = searchChurches(name.trim());
-
-    res.status(200).json(churches);
-  } catch (error) {
-    res.status(500).json({
-      error: "Unable to search churches"
-    });
-  }
-});
 
   // Search by church name, denomination, or city
   if (search && search.trim()) {
