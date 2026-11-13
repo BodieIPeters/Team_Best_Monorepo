@@ -361,7 +361,7 @@ describe('PR4 Client App Tests', () => {
     // --- NOTIFICATIONS SWITCH (User Stories 55 & 56) ---
 
   test('5n. [User Stories 55 & 56: Notifications] switch turns notifications off and back on', async () => {
-    const { getByText, getByPlaceholderText, getByTestId, findByPlaceholderText } =
+    const { getByPlaceholderText, getByTestId, findByPlaceholderText } =
       render(<HomeScreen />);
 
     // Login
@@ -370,16 +370,20 @@ describe('PR4 Client App Tests', () => {
     fireEvent.press(getByTestId('btn-skip-quiz'));
     await findByPlaceholderText(SEARCH_PLACEHOLDER);
 
+    // The switch lives on the account page, not in the directory filters.
+    fireEvent.press(getByTestId("btn-account"));
+    const notificationSwitch = getByTestId("switch-notifications");
+
     // Notifications start on
-    expect(getByText('Notifications: On 🔔')).toBeTruthy();
+    expect(notificationSwitch.props.value).toBe(true);
 
-    // Press the switch to turn them off
-    fireEvent.press(getByTestId('btn-toggle-notifications'));
-    expect(getByText('Notifications: Off 🔕')).toBeTruthy();
+    // Flip the switch to turn them off
+    fireEvent(notificationSwitch, "valueChange", false);
+    expect(getByTestId("switch-notifications").props.value).toBe(false);
 
-    // Press again to turn them back on
-    fireEvent.press(getByTestId('btn-toggle-notifications'));
-    expect(getByText('Notifications: On 🔔')).toBeTruthy();
+    // Flip it again to turn them back on
+    fireEvent(getByTestId("switch-notifications"), "valueChange", true);
+    expect(getByTestId("switch-notifications").props.value).toBe(true);
   });
   // --- HOW THE APP WORKS (User Story 62) ---
 
