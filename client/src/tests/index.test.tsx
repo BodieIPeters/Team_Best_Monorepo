@@ -358,7 +358,29 @@ describe('PR4 Client App Tests', () => {
     expect(queryByText('Ada Bible Church (East Paris)')).toBeNull();
     expect(queryByText('Cathedral of St. Andrew')).toBeNull();
   });
-  
+    // --- NOTIFICATIONS SWITCH (User Stories 55 & 56) ---
+
+  test('5n. [User Stories 55 & 56: Notifications] switch turns notifications off and back on', async () => {
+    const { getByText, getByPlaceholderText, getByTestId, findByPlaceholderText } =
+      render(<HomeScreen />);
+
+    // Login
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByPlaceholderText(SEARCH_PLACEHOLDER);
+
+    // Notifications start on
+    expect(getByText('Notifications: On 🔔')).toBeTruthy();
+
+    // Press the switch to turn them off
+    fireEvent.press(getByTestId('btn-toggle-notifications'));
+    expect(getByText('Notifications: Off 🔕')).toBeTruthy();
+
+    // Press again to turn them back on
+    fireEvent.press(getByTestId('btn-toggle-notifications'));
+    expect(getByText('Notifications: On 🔔')).toBeTruthy();
+  });
   // --- HOW THE APP WORKS (User Story 62) ---
 
   test('5g. [User Story 62: How it works] shows the steps when the button is pressed', () => {
