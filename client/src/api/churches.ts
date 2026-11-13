@@ -10,13 +10,21 @@
  * localhost only works on web and simulators. A physical phone needs the
  * Mac's LAN IP here instead (e.g. http://192.168.1.20:5000/api).
  */
-import { Church } from '@/constants/mockChurches';
+import { Church, MOCK_CHURCHES } from '@/constants/mockChurches';
 
 const API_URL = 'http://localhost:5000/api';
 
 /** GET /api/churches: every church on the server. */
 export async function getChurches(): Promise<Church[]> {
-  const response = await fetch(`${API_URL}/churches`);
+    let response: Response;
+  try {
+    response = await fetch(`${API_URL}/churches`);
+  } catch {
+    // Server not reachable (not running, or a phone can't reach localhost):
+    // show the sample churches so the app still works for demos.
+    console.warn('Church server not reachable. Showing sample churches.');
+    return MOCK_CHURCHES;
+  }
 
   if (!response.ok) {
     throw new Error('Failed to fetch churches');

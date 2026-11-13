@@ -1,39 +1,37 @@
 ## Entities
-- User
-- Suggestion
-- Visit
-- Feedback
-- Church
-- Service
-- Ministry
-- Event
-- Administrator
+Each entity maps to a database table, except where noted below. Sample rows are shown in the diagram.
 
+| Entity | Attributes |
+|---|---|
+| Student | ID, emailAddress, name, denomination, worshipStyle, serviceTime, maxDistance |
+| Church | ID, name, address, city, state, zip, denomination, worshipStyle |
+| Administrator | ID, emailAddress, name |
+| Service | ID, dayOfWeek, startTime |
+| Ministry | ID, name, description |
+| Event | ID, title, time |
+| Feedback | ID, time, rating, comment |
+| Suggestion | ID, matchScore, time |
+
+Notes:
+- **Student** is called User in earlier versions. The schema uses `studentId` throughout. The schema currently has only `student_preferences`, with no table holding email or name (see SCHEMA_HANDOFF.md).
+- **Administrator** and **Event** are part of the model but have no tables in the schema yet. SCHEMA_HANDOFF.md lists the tables to add (`administrators`, `events`, `event_attendees`).
+- **Favorites** and **Commitment** are relationships, not entities. They are implemented as the `favorites` and `commitments` tables.
 
 ## Entity Relationships
-### Person side
-- A User has preferences (denomination, worship style, service times, max distance)
-- A User makes many Visits
-- A User attends many Events
-- A User receives many Suggestions
-
-### Suggestions (between User and Church)
-- A Suggestion belongs to one User and is for one Church
-
-### Visits and Feedback
-- A Visit is made by one User at one Church
-- A Visit is for one specific Service
-- A Visit leads to zero or one Feedback
-- A Feedback belongs to one Visit
-
-### Church side
-- A Church has a location (address, city, state, zip)
-- A Church has one or more Administrators
-- A Church offers one or more Services
-- A Church runs zero or more Ministries
-- A Church has a list of Events
-- A Ministry has many Events
-- An Event belongs to one Church and optionally to one Ministry
+| Relationship | Multiplicity |
+|---|---|
+| Church — Administrator | 1 to 1..* |
+| Church — Service | 1 to 1..* |
+| Church — Ministry | 1 to 0..* |
+| Church — Event | 1 to 0..* |
+| Ministry — Event | 0..1 to 0..* (an Event may belong to no Ministry) |
+| Church — Suggestion | 1 to 0..* |
+| Student — Suggestion | 1 to 0..* |
+| Church — Feedback | 1 to 0..* |
+| Student — Feedback | 1 to 0..* |
+| Student — Church (favorites) | 0..* to 0..* |
+| Student — Church (commits to) | 0..1 to 0..* (a student commits to at most one church) |
+| Student — Event (attends) | 0..* to 0..* |
 
 
-![Domain Model](./images/Domain_Model_Screenshot2.0.png)
+![Domain Model](./images/Domain_Model_5.0.png)

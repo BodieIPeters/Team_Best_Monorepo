@@ -46,6 +46,25 @@ import { recommendChurches } from '@/utils/recommendChurches';
 /** Which page a signed-in student is on. Sign-in (and every re-sign-in) starts at 'quiz'. */
 type Screen = 'quiz' | 'results' | 'directory';
 
+
+/** Steps shown in the "How does this app work?" box on the sign-in screen (Kanban story #62). */
+const HOW_IT_WORKS_STEPS = [
+  'Create an account or sign in.',
+  'Answer a few questions about what you want in a church.',
+  'See churches that match your answers.',
+  'Search, filter, and save your favorites.',
+  'Leave a comment to help other students.',
+];
+
+
+/** Distance choices for the directory filter (Kanban story #46). null means any distance. */
+const DISTANCE_OPTIONS: { label: string; miles: number | null }[] = [
+  { label: 'Any distance', miles: null },
+  { label: 'Within 3 mi', miles: 3 },
+  { label: 'Within 5 mi', miles: 5 },
+  { label: 'Within 10 mi', miles: 10 },
+];
+
 export default function HomeScreen() {
   // --- Sign-in state ---
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -63,8 +82,10 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [selectedDenomination, setSelectedDenomination] = useState('All');
-  const [selectedLanguage, setSelectedLanguage] = useState('All');
-
+  const [selectedWorshipStyle, setSelectedWorshipStyle] = useState('All');
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [maxDistance, setMaxDistance] = useState<number | null>(null); // null = any distance
+  const [notificationsOn, setNotificationsOn] = useState(true); // notifications switch (stories #55 & #56)
   // --- Quiz flow ---
   const [screen, setScreen] = useState<Screen>('quiz');
   // null until the quiz is submitted; skipping the quiz leaves it null.
@@ -108,7 +129,9 @@ export default function HomeScreen() {
     setSearchQuery('');
     setShowOnlyFavorites(false);
     setSelectedDenomination('All');
-    setSelectedLanguage('All');
+    setSelectedWorshipStyle('All');
+    setMaxDistance(null);
+    setNotificationsOn(true);
     setScreen('quiz');
     setQuizAnswers(null);
   };
@@ -144,12 +167,41 @@ export default function HomeScreen() {
       )
     );
   };
+  
+    /** Replaces one feedback comment on a church (Kanban story #54). */
+  const handleEditFeedback = (id: string, index: number, newFeedback: string) => {
+    setChurches((prevChurches) =>
+      prevChurches.map((church) =>
+        church.id === id
+          ? {
+              ...church,
+              userFeedback: church.userFeedback.map((fb, i) =>
+                i === index ? newFeedback : fb
+              ),
+            }
+          : church
+      )
+    );
+  };
+
+  /** Removes one feedback comment from a church (Kanban story #54). */
+  const handleDeleteFeedback = (id: string, index: number) => {
+    setChurches((prevChurches) =>
+      prevChurches.map((church) =>
+        church.id === id
+          ? {
+              ...church,
+              userFeedback: church.userFeedback.filter((_, i) => i !== index),
+            }
+          : church
+      )
+    );
+  };
+
+
 
   const denominationOptions = ['All', ...new Set(churches.map((church) => church.denomination))];
-  const languageOptions = [
-    'All',
-    ...new Set(churches.flatMap((church) => church.languages)),
-  ];
+  const worshipStyleOptions = ['All', ...new Set(churches.map((church) => church.worshipStyle))];
 
   /**
    * Churches shown in the directory: must match the search box (by name or ZIP),
@@ -163,11 +215,11 @@ export default function HomeScreen() {
     const matchesFavorite = showOnlyFavorites ? favorites.includes(church.id) : true;
     const matchesDenomination =
       selectedDenomination === 'All' || church.denomination === selectedDenomination;
-    const matchesLanguage =
-      selectedLanguage === 'All' || church.languages.includes(selectedLanguage);
-    return matchesSearch && matchesFavorite && matchesDenomination && matchesLanguage;
+        const matchesWorshipStyle =
+      selectedWorshipStyle === 'All' || church.worshipStyle === selectedWorshipStyle;
+      const matchesDistance = maxDistance === null || church.distanceMiles <= maxDistance;
+    return matchesSearch && matchesFavorite && matchesDenomination && matchesWorshipStyle && matchesDistance;
   });
-
   // PAGE 1: LANDING & LOGIN / REGISTER (User Story 1)
   if (!isLoggedIn) {
     return (
@@ -226,6 +278,27 @@ export default function HomeScreen() {
               {isRegistering ? 'Register & Continue' : 'Sign In'}
             </Text>
           </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.howItWorksBtn}
+            onPress={() => setShowHowItWorks((prev) => !prev)}
+            testID="btn-how-it-works"
+          >
+            <Text style={styles.howItWorksBtnText}>
+              {showHowItWorks ? 'Hide how it works' : 'How does this app work?'}
+            </Text>
+          </TouchableOpacity>
+
+          {showHowItWorks && (
+            <View style={styles.howItWorksBox} testID="how-it-works-box">
+              {HOW_IT_WORKS_STEPS.map((step, index) => (
+                <Text key={step} style={styles.howItWorksStep}>
+                  {index + 1}. {step}
+                </Text>
+              ))}
+            </View>
+          )}
+
         </View>
       </KeyboardAvoidingView>
     );
@@ -337,6 +410,19 @@ export default function HomeScreen() {
           >
             <Text style={styles.updatePrefsText}>Update Preferences</Text>
           </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.filterBtn, notificationsOn && styles.filterBtnActive]}
+            onPress={() => setNotificationsOn((prev) => !prev)}
+            testID="btn-toggle-notifications"
+          >
+            <Text
+              style={[styles.filterBtnText, notificationsOn && styles.filterBtnTextActive]}
+            >
+              {notificationsOn ? 'Notifications: On 🔔' : 'Notifications: Off 🔕'}
+            </Text>
+          </TouchableOpacity>
+
         </View>
 
         <View style={styles.denominationFilterRow}>
@@ -361,31 +447,56 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
-
-        <View style={styles.languageFilterRow}>
-          <Text style={styles.languageFilterLabel}>Language:</Text>
-          {languageOptions.map((language) => (
+      
+      
+        <View style={styles.denominationFilterRow}>
+          {worshipStyleOptions.map((worshipStyle) => (
             <TouchableOpacity
-              key={language}
+              key={worshipStyle}
               style={[
                 styles.denominationFilterBtn,
-                selectedLanguage === language && styles.denominationFilterBtnActive,
+                selectedWorshipStyle === worshipStyle && styles.denominationFilterBtnActive,
               ]}
-              onPress={() => setSelectedLanguage(language)}
-              testID={`btn-language-${language}`}
+              onPress={() => setSelectedWorshipStyle(worshipStyle)}
+              testID={`btn-worship-${worshipStyle}`}
             >
               <Text
                 style={[
                   styles.denominationFilterText,
-                  selectedLanguage === language && styles.denominationFilterTextActive,
+                  selectedWorshipStyle === worshipStyle && styles.denominationFilterTextActive,
                 ]}
               >
-                {language}
+                {worshipStyle}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
+        
+        <View style={styles.denominationFilterRow}>
+          {DISTANCE_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option.label}
+              style={[
+                styles.denominationFilterBtn,
+                maxDistance === option.miles && styles.denominationFilterBtnActive,
+              ]}
+              onPress={() => setMaxDistance(option.miles)}
+              testID={`btn-distance-${option.miles ?? 'any'}`}
+            >
+              <Text
+                style={[
+                  styles.denominationFilterText,
+                  maxDistance === option.miles && styles.denominationFilterTextActive,
+                ]}
+              >
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
       </View>
+
 
       <FlatList
         data={filteredChurches}
@@ -402,6 +513,8 @@ export default function HomeScreen() {
             isFavorite={favorites.includes(item.id)}
             onToggleFavorite={toggleFavorite}
             onAddFeedback={handleAddFeedback}
+            onEditFeedback={handleEditFeedback}
+            onDeleteFeedback={handleDeleteFeedback}
           />
         )}
       />
@@ -525,6 +638,10 @@ const styles = StyleSheet.create({
   },
   denominationFilterText: { color: '#374151', fontSize: 11, fontWeight: '600' },
   denominationFilterTextActive: { color: '#1e3a8a' },
+  howItWorksBtn: { marginTop: 12, alignItems: 'center' },
+  howItWorksBtnText: { color: '#1e3a8a', fontWeight: '600' },
+  howItWorksBox: { marginTop: 12, padding: 12, backgroundColor: '#f9fafb', borderRadius: 8 },
+  howItWorksStep: { color: '#374151', marginBottom: 6 },
   listContainer: { paddingHorizontal: 16, paddingBottom: 20 },
   statusBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   statusText: { marginTop: 12, color: '#4b5563' },
