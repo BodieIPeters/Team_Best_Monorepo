@@ -2,6 +2,7 @@
 const express = require("express");
 const cors = require("cors");
 const { db } = require("./mockData");
+const churchService = require("./services/churchService");
 
 const app = express();
 
@@ -28,7 +29,7 @@ app.get("/api/health", (req, res) => {
 // GET ALL CHURCHES / SEARCH / FILTER
 // ==========================================
 
-app.get("/api/churches", (req, res) => {
+app.get("/api/churches", async (req, res) => {
   const { search, denomination, worshipStyle } = req.query;
 
   if (
@@ -42,47 +43,21 @@ app.get("/api/churches", (req, res) => {
     });
   }
 
-  let results = [...db.churches];
+  const churches = await churchService.listChurches({
+    search,
+    denomination,
+    worshipStyle
+  });
 
-
-  // Search by church name, denomination, or city
-  if (search && search.trim()) {
-    const term = search.toLowerCase();
-
-    results = results.filter(church =>
-      church.name.toLowerCase().includes(term) ||
-      church.denomination.toLowerCase().includes(term) ||
-      church.city.toLowerCase().includes(term)
-    );
-  }
-
-  // Filter by denomination
-  if (denomination) {
-    results = results.filter(church =>
-      church.denomination.toLowerCase() ===
-      denomination.toLowerCase()
-    );
-  }
-
-  // Filter by worship style
-  if (worshipStyle) {
-    results = results.filter(church =>
-      church.worshipStyle.toLowerCase() ===
-      worshipStyle.toLowerCase()
-    );
-  }
-
-  res.status(200).json(results);
+  res.status(200).json(churches);
 });
 
 // ==========================================
 // GET CHURCH BY ID
 // ==========================================
 
-app.get("/api/churches/:id", (req, res) => {
-  const church = db.churches.find(
-    church => church.id === req.params.id
-  );
+app.get("/api/churches/:id", async (req, res) => {
+  const church = await churchService.getChurch(req.params.id);
 
   if (!church) {
     return res.status(404).json({

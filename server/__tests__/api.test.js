@@ -3,6 +3,41 @@ const request = require("supertest");
 const app = require("../src/app");
 const { db, resetData } = require("../src/mockData");
 
+// The church routes read from the database layer. Here we replace it with a
+// pretend database built from the mock data, so these tests never need Supabase.
+jest.mock("../src/db/churchRepository", () => {
+  const { db } = require("../src/mockData");
+
+  const toRow = church => ({
+    id: Number(church.id),
+    name: church.name,
+    address: church.address,
+    city: church.city,
+    state: church.state,
+    zip: church.zipcode,
+    denomination: church.denomination,
+    worship_style: church.worshipStyle,
+    description: church.description,
+    rating: church.rating,
+    distance_miles: church.distanceMiles,
+    services: [
+      {
+        day_of_week: "Sunday",
+        start_time: "10:00:00",
+        visits: church.userFeedback.map(comment => ({ comment }))
+      }
+    ]
+  });
+
+  return {
+    getAllChurches: async () => db.churches.map(toRow),
+    getChurchById: async id => {
+      const church = db.churches.find(c => Number(c.id) === id);
+      return church ? toRow(church) : null;
+    }
+  };
+});
+
 beforeEach(() => {
   resetData();
 });
