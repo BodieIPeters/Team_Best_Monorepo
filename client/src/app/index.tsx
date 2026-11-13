@@ -205,7 +205,7 @@ export default function HomeScreen() {
 
   /**
    * Churches shown in the directory: must match the search box (by name or ZIP),
-   * the selected denomination, and, if "Filter Favorites" is on, be saved.
+   * the selected denomination and language, and, if "Filter Favorites" is on, be saved.
    * An empty search matches everything.
    */
   const filteredChurches = churches.filter((church) => {
@@ -616,6 +616,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 4,
   },
+  languageFilterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  languageFilterLabel: { color: '#374151', fontSize: 12, fontWeight: '600', marginRight: 8 },
   denominationFilterBtn: {
     backgroundColor: '#e5e7eb',
     borderRadius: 999,
