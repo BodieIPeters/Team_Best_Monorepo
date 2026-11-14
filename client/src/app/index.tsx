@@ -6,9 +6,11 @@
  *   signed in     -> 'quiz'      : PreferenceQuiz        (SRS User Story 3)
  *                    'results'   : QuizResults           (SRS User Story 4)
  *                    'directory' : searchable church list with favorites + feedback
+ *                    'account'   : AccountScreen: username, quiz answers, notifications
  *
  * Flow: sign in -> quiz -> (Submit) results -> (Return Home) directory.
  *       "Skip for now" on the quiz goes straight to the directory.
+ *       The Account button in the header opens 'account'; Return Home goes to the directory.
  *
  * The student can retake the quiz from the results screen (SRS User Story 15)
  * or update their preferences from the directory (SRS User Story 26). Both
@@ -38,13 +40,14 @@ import {
 import { Church } from '@/constants/mockChurches';
 import { getChurches } from '@/api/churches';
 import { ChurchCard } from '@/components/ChurchCard';
+import { AccountScreen } from "@/components/AccountScreen";
 import { PreferenceQuiz } from '@/components/PreferenceQuiz';
 import { QuizResults } from '@/components/QuizResults';
 import { QuizAnswers } from '@/constants/quizQuestions';
 import { recommendChurches } from '@/utils/recommendChurches';
 
 /** Which page a signed-in student is on. Sign-in (and every re-sign-in) starts at 'quiz'. */
-type Screen = 'quiz' | 'results' | 'directory';
+type Screen = 'quiz' | 'results' | 'directory' | 'account';
 
 
 /** Steps shown in the "How does this app work?" box on the sign-in screen (Kanban story #62). */
@@ -85,7 +88,7 @@ export default function HomeScreen() {
   const [selectedWorshipStyle, setSelectedWorshipStyle] = useState('All');
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [maxDistance, setMaxDistance] = useState<number | null>(null); // null = any distance
-  const [notificationsOn, setNotificationsOn] = useState(true); // notifications switch (stories #55 & #56)
+  const [notificationsOn, setNotificationsOn] = useState(true); // changed on the account page (stories #55 & #56)
   // --- Quiz flow ---
   const [screen, setScreen] = useState<Screen>('quiz');
   // null until the quiz is submitted; skipping the quiz leaves it null.
@@ -304,15 +307,41 @@ export default function HomeScreen() {
     );
   }
 
-  // Welcome + Log Out bar, shared by all three signed-in screens.
+  // Welcome + Account + Log Out bar, shared by the quiz, results and directory screens.
   const headerBar = (
     <View style={styles.headerBar}>
       <Text style={styles.welcomeText}>Welcome, {username}!</Text>
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Log Out</Text>
-      </TouchableOpacity>
+      <View style={styles.headerButtons}>
+        <TouchableOpacity
+          style={styles.accountBtn}
+          onPress={() => setScreen("account")}
+          testID="btn-account"
+        >
+          <Text style={styles.accountText}>Account</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <Text style={styles.logoutText}>Log Out</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
+
+  // The account page has its own Return Home and Log Out buttons, so it skips the header.
+  // It sits above the loading check because it doesn't need church data.
+  if (screen === "account") {
+    return (
+      <SafeAreaView style={styles.container}>
+        <AccountScreen
+          username={username}
+          quizAnswers={quizAnswers}
+          notificationsOn={notificationsOn}
+          onNotificationsChange={setNotificationsOn}
+          onReturnHome={() => setScreen("directory")}
+          onLogout={handleLogout}
+        />
+      </SafeAreaView>
+    );
+  }
 
   // PREFERENCE QUIZ (SRS User Story 3)
   if (screen === 'quiz') {
@@ -409,18 +438,6 @@ export default function HomeScreen() {
             testID="btn-update-preferences"
           >
             <Text style={styles.updatePrefsText}>Update Preferences</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.filterBtn, notificationsOn && styles.filterBtnActive]}
-            onPress={() => setNotificationsOn((prev) => !prev)}
-            testID="btn-toggle-notifications"
-          >
-            <Text
-              style={[styles.filterBtnText, notificationsOn && styles.filterBtnTextActive]}
-            >
-              {notificationsOn ? 'Notifications: On 🔔' : 'Notifications: Off 🔕'}
-            </Text>
           </TouchableOpacity>
 
         </View>
@@ -576,6 +593,14 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   logoutText: { color: '#fff', fontWeight: 'bold' },
+  headerButtons: { flexDirection: "row", alignItems: "center", gap: 8 },
+  accountBtn: {
+    backgroundColor: "#1e3a8a",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  accountText: { color: "#fff", fontWeight: "bold" },
   searchContainer: { padding: 16 },
   searchInput: {
     backgroundColor: '#fff',
