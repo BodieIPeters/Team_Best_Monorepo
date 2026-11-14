@@ -45,6 +45,7 @@ import { PreferenceQuiz } from '@/components/PreferenceQuiz';
 import { QuizResults } from '@/components/QuizResults';
 import { QuizAnswers } from '@/constants/quizQuestions';
 import { recommendChurches } from '@/utils/recommendChurches';
+import { ForgotPassword } from '@/components/ForgotPassword';
 
 /** Which page a signed-in student is on. Sign-in (and every re-sign-in) starts at 'quiz'. */
 type Screen = 'quiz' | 'results' | 'directory' | 'account';
@@ -87,6 +88,7 @@ export default function HomeScreen() {
   const [selectedDenomination, setSelectedDenomination] = useState('All');
   const [selectedWorshipStyle, setSelectedWorshipStyle] = useState('All');
   const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [showForgot, setShowForgot] = useState(false); // forgot-password screen (story #60)
   const [maxDistance, setMaxDistance] = useState<number | null>(null); // null = any distance
   const [notificationsOn, setNotificationsOn] = useState(true); // changed on the account page (stories #55 & #56)
   // --- Quiz flow ---
@@ -223,6 +225,21 @@ export default function HomeScreen() {
       const matchesDistance = maxDistance === null || church.distanceMiles <= maxDistance;
     return matchesSearch && matchesFavorite && matchesDenomination && matchesWorshipStyle && matchesDistance;
   });
+
+  
+  // FORGOT PASSWORD (Kanban story #60)
+  if (!isLoggedIn && showForgot) {
+    return (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <View style={styles.authCard}>
+          <ForgotPassword onBack={() => setShowForgot(false)} />
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
   // PAGE 1: LANDING & LOGIN / REGISTER (User Story 1)
   if (!isLoggedIn) {
     return (
@@ -281,6 +298,17 @@ export default function HomeScreen() {
               {isRegistering ? 'Register & Continue' : 'Sign In'}
             </Text>
           </TouchableOpacity>
+
+          
+          <TouchableOpacity
+            style={styles.howItWorksBtn}
+            onPress={() => setShowForgot(true)}
+            testID="btn-forgot-password"
+          >
+            <Text style={styles.howItWorksBtnText}>Forgot password?</Text>
+          </TouchableOpacity>
+
+
           
           <TouchableOpacity
             style={styles.howItWorksBtn}
