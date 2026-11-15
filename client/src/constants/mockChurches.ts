@@ -6,6 +6,7 @@ export interface Church {
   state: string;
   zipcode: string;
   denomination: string;
+  languages: string[];
   serviceTimes: string;
   worshipStyle: 'Contemporary' | 'Traditional' | 'Liturgical' | 'Blended';
   distanceMiles: number;
@@ -24,6 +25,7 @@ export const MOCK_CHURCHES: Church[] = [
     state: 'MI',
     zipcode: '49503',
     denomination: 'Catholic',
+    languages: ['English'],
     serviceTimes: 'Sun 8:30 AM, 10:30 AM, 5:30 PM',
     worshipStyle: 'Liturgical',
     distanceMiles: 1.8,
@@ -39,6 +41,7 @@ export const MOCK_CHURCHES: Church[] = [
     state: 'MI',
     zipcode: '49504',
     denomination: 'Nondenominational',
+    languages: ['English'],
     serviceTimes: 'Sun 9:00 AM & 10:45 AM',
     worshipStyle: 'Contemporary',
     distanceMiles: 2.3,
@@ -54,6 +57,7 @@ export const MOCK_CHURCHES: Church[] = [
     state: 'MI',
     zipcode: '49525',
     denomination: 'Nondenominational',
+    languages: ['English', 'Spanish'],
     serviceTimes: 'Sun 9:00 AM & 10:45 AM',
     worshipStyle: 'Blended',
     distanceMiles: 5.1,
@@ -69,6 +73,7 @@ export const MOCK_CHURCHES: Church[] = [
     state: 'MI',
     zipcode: '49507',
     denomination: 'Christian Reformed',
+    languages: ['English', 'Spanish'],
     serviceTimes: 'Sun 10:00 AM',
     worshipStyle: 'Contemporary',
     distanceMiles: 3.0,
@@ -84,6 +89,7 @@ export const MOCK_CHURCHES: Church[] = [
     state: 'MI',
     zipcode: '49506',
     denomination: 'Congregational',
+    languages: ['English'],
     serviceTimes: 'Sun 10:00 AM',
     worshipStyle: 'Traditional',
     distanceMiles: 3.8,
@@ -99,6 +105,7 @@ export const MOCK_CHURCHES: Church[] = [
     state: 'MI',
     zipcode: '49546',
     denomination: 'Nondenominational',
+    languages: ['English'],
     serviceTimes: 'Sun 9:00 AM & 11:00 AM',
     worshipStyle: 'Contemporary',
     distanceMiles: 6.2,

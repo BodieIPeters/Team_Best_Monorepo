@@ -27,6 +27,8 @@ describe('PR4 Client App Tests', () => {
 
   test('1. [Landing Page] renders auth landing page initially with Sign In and Register options', () => {
     const { getByText, getByPlaceholderText, getByTestId } = render(<HomeScreen />);
+    expect(getByText('Church Match')).toBeTruthy();
+    expect(getByTestId('app-logo')).toBeTruthy();
     expect(getByText('Find Your Community')).toBeTruthy();
     expect(getByPlaceholderText('Username')).toBeTruthy();
     expect(getByPlaceholderText('Password')).toBeTruthy();
@@ -85,6 +87,25 @@ describe('PR4 Client App Tests', () => {
     expect(queryByText('Crossroads Bible Church')).toBeNull();
 
     fireEvent.press(getByTestId('btn-denomination-All'));
+    expect(getByText('Crossroads Bible Church')).toBeTruthy();
+  });
+
+  test('3c. filters churches by language, including churches with multiple languages', async () => {
+    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByTestId } =
+      render(<HomeScreen />);
+
+    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
+    fireEvent.press(getByTestId('btn-auth'));
+    fireEvent.press(getByTestId('btn-skip-quiz'));
+    await findByTestId('btn-language-Spanish');
+
+    fireEvent.press(getByTestId('btn-language-Spanish'));
+
+    expect(getByText('Calvary Church')).toBeTruthy();
+    expect(getByText('Madison Square Church')).toBeTruthy();
+    expect(queryByText('Crossroads Bible Church')).toBeNull();
+
+    fireEvent.press(getByTestId('btn-language-All'));
     expect(getByText('Crossroads Bible Church')).toBeTruthy();
   });
 
