@@ -228,6 +228,10 @@ export default function HomeScreen() {
         style={styles.container}
       >
         <View style={styles.authCard}>
+          <View style={styles.brandMark} testID="app-logo">
+            <Text style={styles.logoCross}>✝</Text>
+          </View>
+          <Text style={styles.appName}>Church Match</Text>
           <Text style={styles.title}>Find Your Community</Text>
           <Text style={styles.subtitle}>
             Connect with local churches across Grand Rapids, MI.
@@ -532,6 +536,24 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
     marginBottom: 'auto',
     elevation: 3,
+  },
+  brandMark: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1e3a8a',
+    marginBottom: 12,
+  },
+  logoCross: { color: '#fff', fontSize: 38, fontWeight: 'bold', lineHeight: 46 },
+  appName: {
+    color: '#1e3a8a',
+    fontSize: 22,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
   },
   title: { fontSize: 24, fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center' },
   subtitle: { fontSize: 14, color: '#666', textAlign: 'center', marginVertical: 8 },
