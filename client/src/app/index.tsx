@@ -40,6 +40,7 @@ import {
 import { Church } from '@/constants/mockChurches';
 import { getChurches } from '@/api/churches';
 import { ChurchCard } from '@/components/ChurchCard';
+import { FilterChipGroup, FilterOption } from "@/components/FilterChipGroup";
 import { AccountScreen } from "@/components/AccountScreen";
 import { PreferenceQuiz } from '@/components/PreferenceQuiz';
 import { QuizResults } from '@/components/QuizResults';
@@ -205,25 +206,42 @@ export default function HomeScreen() {
 
 
 
-  const denominationOptions = ['All', ...new Set(churches.map((church) => church.denomination))];
-  const worshipStyleOptions = ['All', ...new Set(churches.map((church) => church.worshipStyle))];
+  // Turns a list of names into filter chips whose value and testID key are the name itself.
+  const toFilterOptions = (names: string[]): FilterOption<string>[] =>
+    names.map((name) => ({ label: name, value: name, key: name }));
 
-  /**
-   * Churches shown in the directory: must match the search box (by name or ZIP),
-   * the selected denomination, and, if "Filter Favorites" is on, be saved.
-   * An empty search matches everything.
-   */
+  const denominationOptions = toFilterOptions([
+    "All",
+    ...new Set(churches.map((church) => church.denomination)),
+  ]);
+  const worshipStyleOptions = toFilterOptions([
+    "All",
+    ...new Set(churches.map((church) => church.worshipStyle)),
+  ]);
+  const distanceOptions: FilterOption<number | null>[] = DISTANCE_OPTIONS.map((option) => ({
+    label: option.label,
+    value: option.miles,
+    key: `${option.miles ?? "any"}`,
+  }));
+
+  // Churches shown in the directory. Both views use the search box (name or ZIP; empty matches
+  // everything). The all-churches view also applies the denomination, worship style and
+  // distance filters. The favorites view shows every saved church that matches the search.
   const filteredChurches = churches.filter((church) => {
     const query = searchQuery.toLowerCase().trim();
     const matchesSearch =
       church.name.toLowerCase().includes(query) || church.zipcode.includes(query);
-    const matchesFavorite = showOnlyFavorites ? favorites.includes(church.id) : true;
+    // The favorites view has no filter chips on screen, so a filter picked on the all-churches
+    // view must not quietly hide saved churches here.
+    if (showOnlyFavorites) {
+      return matchesSearch && favorites.includes(church.id);
+    }
     const matchesDenomination =
-      selectedDenomination === 'All' || church.denomination === selectedDenomination;
-        const matchesWorshipStyle =
-      selectedWorshipStyle === 'All' || church.worshipStyle === selectedWorshipStyle;
-      const matchesDistance = maxDistance === null || church.distanceMiles <= maxDistance;
-    return matchesSearch && matchesFavorite && matchesDenomination && matchesWorshipStyle && matchesDistance;
+      selectedDenomination === "All" || church.denomination === selectedDenomination;
+    const matchesWorshipStyle =
+      selectedWorshipStyle === "All" || church.worshipStyle === selectedWorshipStyle;
+    const matchesDistance = maxDistance === null || church.distanceMiles <= maxDistance;
+    return matchesSearch && matchesDenomination && matchesWorshipStyle && matchesDistance;
   });
 
   
@@ -456,7 +474,7 @@ export default function HomeScreen() {
             <Text
               style={[styles.filterBtnText, showOnlyFavorites && styles.filterBtnTextActive]}
             >
-              {showOnlyFavorites ? 'Showing Favorites ★' : 'Filter Favorites'}
+              {showOnlyFavorites ? "Show All Churches" : "My Favorites ★"}
             </Text>
           </TouchableOpacity>
 
@@ -470,75 +488,31 @@ export default function HomeScreen() {
 
         </View>
 
-        <View style={styles.denominationFilterRow}>
-          {denominationOptions.map((denomination) => (
-            <TouchableOpacity
-              key={denomination}
-              style={[
-                styles.denominationFilterBtn,
-                selectedDenomination === denomination && styles.denominationFilterBtnActive,
-              ]}
-              onPress={() => setSelectedDenomination(denomination)}
-              testID={`btn-denomination-${denomination}`}
-            >
-              <Text
-                style={[
-                  styles.denominationFilterText,
-                  selectedDenomination === denomination && styles.denominationFilterTextActive,
-                ]}
-              >
-                {denomination}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      
-      
-        <View style={styles.denominationFilterRow}>
-          {worshipStyleOptions.map((worshipStyle) => (
-            <TouchableOpacity
-              key={worshipStyle}
-              style={[
-                styles.denominationFilterBtn,
-                selectedWorshipStyle === worshipStyle && styles.denominationFilterBtnActive,
-              ]}
-              onPress={() => setSelectedWorshipStyle(worshipStyle)}
-              testID={`btn-worship-${worshipStyle}`}
-            >
-              <Text
-                style={[
-                  styles.denominationFilterText,
-                  selectedWorshipStyle === worshipStyle && styles.denominationFilterTextActive,
-                ]}
-              >
-                {worshipStyle}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        
-        <View style={styles.denominationFilterRow}>
-          {DISTANCE_OPTIONS.map((option) => (
-            <TouchableOpacity
-              key={option.label}
-              style={[
-                styles.denominationFilterBtn,
-                maxDistance === option.miles && styles.denominationFilterBtnActive,
-              ]}
-              onPress={() => setMaxDistance(option.miles)}
-              testID={`btn-distance-${option.miles ?? 'any'}`}
-            >
-              <Text
-                style={[
-                  styles.denominationFilterText,
-                  maxDistance === option.miles && styles.denominationFilterTextActive,
-                ]}
-              >
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {!showOnlyFavorites && (
+          <View style={styles.filterGroups} testID="directory-filters">
+            <FilterChipGroup
+              title="Denomination"
+              options={denominationOptions}
+              selected={selectedDenomination}
+              onSelect={setSelectedDenomination}
+              testIDPrefix="btn-denomination"
+            />
+            <FilterChipGroup
+              title="Worship style"
+              options={worshipStyleOptions}
+              selected={selectedWorshipStyle}
+              onSelect={setSelectedWorshipStyle}
+              testIDPrefix="btn-worship"
+            />
+            <FilterChipGroup
+              title="Distance"
+              options={distanceOptions}
+              selected={maxDistance}
+              onSelect={setMaxDistance}
+              testIDPrefix="btn-distance"
+            />
+          </View>
+        )}
 
       </View>
 
@@ -549,7 +523,9 @@ export default function HomeScreen() {
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={
           <Text style={styles.emptyText}>
-            No churches found matching your criteria.
+            {showOnlyFavorites && favorites.length === 0
+              ? "You haven't saved any churches yet."
+              : "No churches found matching your criteria."}
           </Text>
         }
         renderItem={({ item }: { item: Church }) => (
@@ -629,7 +605,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   accountText: { color: "#fff", fontWeight: "bold" },
-  searchContainer: { padding: 16 },
+  searchContainer: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   searchInput: {
     backgroundColor: '#fff',
     borderWidth: 1,
@@ -642,8 +618,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: 12,
     flexWrap: 'wrap',
+    gap: 8,
   },
   filterBtn: {
     paddingVertical: 8,
@@ -663,27 +640,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   updatePrefsText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  denominationFilterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  denominationFilterBtn: {
-    backgroundColor: '#e5e7eb',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  denominationFilterBtnActive: {
-    backgroundColor: '#dbeafe',
-    borderWidth: 1,
-    borderColor: '#1e3a8a',
-  },
-  denominationFilterText: { color: '#374151', fontSize: 11, fontWeight: '600' },
-  denominationFilterTextActive: { color: '#1e3a8a' },
+  filterGroups: { marginTop: 16, gap: 14 },
   howItWorksBtn: { marginTop: 12, alignItems: 'center' },
   howItWorksBtnText: { color: '#1e3a8a', fontWeight: '600' },
   howItWorksBox: { marginTop: 12, padding: 12, backgroundColor: '#f9fafb', borderRadius: 8 },
