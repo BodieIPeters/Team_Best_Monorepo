@@ -271,6 +271,14 @@ export default function HomeScreen() {
             Connect with local churches across Grand Rapids, MI.
           </Text>
 
+        <View style={styles.welcomeBox} testID="welcome-message">
+          <Text style={styles.welcomeTitle}>Welcome to Church Match!</Text>
+          <Text style={styles.welcomeBody}>
+            We help college students find a church near campus that fits them. Answer a few
+            questions and the app will suggest churches that match what you want.
+            </Text>
+          </View>
+
           <View style={styles.tabContainer}>
             <TouchableOpacity
               style={[styles.tab, !isRegistering && styles.activeTab]}
@@ -645,6 +653,9 @@ const styles = StyleSheet.create({
   howItWorksBtnText: { color: '#1e3a8a', fontWeight: '600' },
   howItWorksBox: { marginTop: 12, padding: 12, backgroundColor: '#f9fafb', borderRadius: 8 },
   howItWorksStep: { color: '#374151', marginBottom: 6 },
+  welcomeBox: { marginTop: 12, padding: 12, backgroundColor: '#eff6ff', borderRadius: 8 },
+  welcomeTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 4 },
+  welcomeBody: { color: '#374151', fontSize: 14 },
   listContainer: { paddingHorizontal: 16, paddingBottom: 20 },
   statusBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   statusText: { marginTop: 12, color: '#4b5563' },
