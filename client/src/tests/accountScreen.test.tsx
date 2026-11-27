@@ -31,6 +31,7 @@ const SAMPLE_ANSWERS: QuizAnswers = {
 const signIn = async () => {
   const utils = render(<HomeScreen />);
   await act(async () => {}); // flush the resolved getChurches promise
+  fireEvent.press(utils.getByTestId("btn-continue"));
   fireEvent.changeText(utils.getByPlaceholderText("Username"), "AccountUser");
   fireEvent.press(utils.getByTestId("btn-auth"));
   return utils;
