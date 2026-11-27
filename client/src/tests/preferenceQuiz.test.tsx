@@ -21,12 +21,13 @@ beforeEach(() => {
 });
 
 /**
- * Renders the app, lets the (mocked) church load finish, and signs in, which
- * lands on the quiz. Returns the render helpers.
+ * Renders the app, lets the (mocked) church load finish, taps Continue on the
+ * welcome screen, and signs in, which lands on the quiz. Returns the render helpers.
  */
 const signIn = async () => {
   const utils = render(<HomeScreen />);
   await act(async () => {}); // flush the resolved getChurches promise
+  fireEvent.press(utils.getByTestId('btn-continue')); // welcome screen -> sign-in (story #37)
   fireEvent.changeText(utils.getByPlaceholderText('Username'), 'QuizUser');
   fireEvent.press(utils.getByTestId('btn-auth'));
   return utils;

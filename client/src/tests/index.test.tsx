@@ -1,434 +1,293 @@
-import { describe, test, expect, jest, beforeEach } from '@jest/globals';
-import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
-import { Share } from 'react-native';
-import HomeScreen from '../app/index';
-import { getChurches } from '../api/churches';
-import { MOCK_CHURCHES } from '../constants/mockChurches';
+// Tests for the account page (story #122: "As a student, I can open up an account
+// menu with my information"). Covers the describePreferences helper, the AccountScreen
+// component on its own, and the real HomeScreen driven the way a student would use it.
+import { describe, test, expect, jest, beforeEach } from "@jest/globals";
+import React from "react";
+import { render, fireEvent, act, within } from "@testing-library/react-native";
+import HomeScreen from "../app/index";
+import { AccountScreen } from "../components/AccountScreen";
+import { getChurches } from "../api/churches";
+import { MOCK_CHURCHES } from "../constants/mockChurches";
+import { NO_PREFERENCE, QuizAnswers } from "../constants/quizQuestions";
+import { describePreferences, NOT_SET } from "../utils/accountInfo";
 
 // Stand in for the server: getChurches resolves with the mock data instead of calling fetch.
-jest.mock('../api/churches', () => ({ getChurches: jest.fn() }));
-const mockGetChurches = jest.mocked(getChurches);
-
-// Mock the native Share API so we can assert the share menu is opened with the right content.
-jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction } as any);
-const mockShare = jest.mocked(Share.share);
+jest.mock("../api/churches", () => ({ getChurches: jest.fn() }));
 
 beforeEach(() => {
-  mockGetChurches.mockReset();
-  mockGetChurches.mockResolvedValue(MOCK_CHURCHES);
-  mockShare.mockClear();
+  jest.mocked(getChurches).mockResolvedValue(MOCK_CHURCHES);
 });
 
-const SEARCH_PLACEHOLDER = 'Search by church name or ZIP code...';
+const SEARCH_PLACEHOLDER = "Search by church name or ZIP code...";
 
-describe('PR4 Client App Tests', () => {
-  // --- LANDING PAGE TESTS (2 Tests) ---
+const SAMPLE_ANSWERS: QuizAnswers = {
+  denomination: "Christian Reformed",
+  worshipStyle: "Contemporary",
+  maxDistance: "5",
+};
 
-  test('1. [Landing Page] renders auth landing page initially with Sign In and Register options', () => {
-    const { getByText, getByPlaceholderText, getByTestId } = render(<HomeScreen />);
-    expect(getByText('Find Your Community')).toBeTruthy();
-    expect(getByPlaceholderText('Username')).toBeTruthy();
-    expect(getByPlaceholderText('Password')).toBeTruthy();
+// Renders the app, waits for the mocked church load, and signs in as AccountUser,
+// which lands on the quiz. Returns the render helpers.
+const signIn = async () => {
+  const utils = render(<HomeScreen />);
+  await act(async () => {}); // flush the resolved getChurches promise
+  fireEvent.press(utils.getByTestId("btn-continue"));
+  fireEvent.changeText(utils.getByPlaceholderText("Username"), "AccountUser");
+  fireEvent.press(utils.getByTestId("btn-auth"));
+  return utils;
+};
 
-    // Verify Tab Switching works on Landing Page
-    fireEvent.press(getByTestId('tab-register'));
-    expect(getByText('Register & Continue')).toBeTruthy();
+type Utils = Awaited<ReturnType<typeof signIn>>;
+
+// Checks that one row on the account page shows the expected value,
+// e.g. expectRow(utils, "Username", "AccountUser").
+const expectRow = (utils: Pick<Utils, "getByTestId">, label: string, value: string) => {
+  const row = utils.getByTestId(`account-row-${label}`);
+  expect(within(row).getByText(value)).toBeTruthy();
+};
+
+describe("describePreferences", () => {
+  test("given no quiz answers, when described, then every preference is Not set", () => {
+    const rows = describePreferences(null);
+    expect(rows.map((row) => row.label)).toEqual([
+      "Denomination",
+      "Worship style",
+      "Distance from campus",
+    ]);
+    expect(rows.every((row) => row.value === NOT_SET)).toBe(true);
   });
 
-  // NOTE: sign-in opens the preference quiz first. Tests 2-5 press "Skip for now"
-  // (btn-skip-quiz) to reach the directory, then wait for churches to load;
-  // the quiz itself is tested in preferenceQuiz.test.tsx.
-  test('2. Navigates from landing page to directory screen upon successful sign in', async () => {
-    const { getByText, getByPlaceholderText, getByTestId, findByPlaceholderText } = render(<HomeScreen />);
-
-    fireEvent.changeText(getByPlaceholderText('Username'), 'DemoUser');
-    fireEvent.changeText(getByPlaceholderText('Password'), 'password123');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-
-    expect(await findByPlaceholderText(SEARCH_PLACEHOLDER)).toBeTruthy();
-    expect(getByText('Welcome, DemoUser!')).toBeTruthy();
+  test("given quiz answers, when described, then the quiz's own wording is shown", () => {
+    expect(describePreferences(SAMPLE_ANSWERS)).toEqual([
+      { label: "Denomination", value: "Christian Reformed" },
+      { label: "Worship style", value: "Contemporary" },
+      { label: "Distance from campus", value: "Within 5 miles" },
+    ]);
   });
 
-  // CHURCH DIRECTORY & USER STORIES TESTS 
-
-  test('3. [User Story 2: Search] filters churches by ZIP code', async () => {
-    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
-
-    // Login first
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-
-    // Search by specific ZIP code (once churches have loaded)
-    const searchInput = await findByPlaceholderText(SEARCH_PLACEHOLDER);
-    fireEvent.changeText(searchInput, '49504');
-
-    expect(getByText('Crossroads Bible Church')).toBeTruthy();
-    expect(queryByText('Cathedral of St. Andrew')).toBeNull();
+  test("given no-preference answers, when described, then they read as No preference", () => {
+    const rows = describePreferences({
+      denomination: NO_PREFERENCE,
+      worshipStyle: NO_PREFERENCE,
+      maxDistance: NO_PREFERENCE,
+    });
+    expect(rows.map((row) => row.value)).toEqual([
+      "No preference",
+      "No preference",
+      "Distance doesn’t matter",
+    ]);
   });
 
-  test('3b. filters churches by denomination', async () => {
-    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
+  test("given an answer that matches no option, when described, then the raw value is shown", () => {
+    const rows = describePreferences({ ...SAMPLE_ANSWERS, denomination: "Lutheran" });
+    expect(rows[0]).toEqual({ label: "Denomination", value: "Lutheran" });
+  });
+});
 
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-    await findByPlaceholderText(SEARCH_PLACEHOLDER);
+describe("AccountScreen component", () => {
+  const renderAccount = (overrides: Partial<React.ComponentProps<typeof AccountScreen>> = {}) =>
+    render(
+      <AccountScreen
+        username="  Sam  "
+        quizAnswers={SAMPLE_ANSWERS}
+        notificationsOn={false}
+        onNotificationsChange={jest.fn()}
+        onReturnHome={jest.fn()}
+        onLogout={jest.fn()}
+        {...overrides}
+      />
+    );
 
-    fireEvent.press(getByTestId('btn-denomination-Catholic'));
-
-    expect(getByText('Cathedral of St. Andrew')).toBeTruthy();
-    expect(queryByText('Crossroads Bible Church')).toBeNull();
-
-    fireEvent.press(getByTestId('btn-denomination-All'));
-    expect(getByText('Crossroads Bible Church')).toBeTruthy();
+  test("given student info, when rendered, then every detail is in its row", () => {
+    const utils = renderAccount();
+    expect(utils.getByText("My Account")).toBeTruthy();
+    expectRow(utils, "Username", "Sam"); // surrounding spaces trimmed
+    expectRow(utils, "Denomination", "Christian Reformed");
+    expectRow(utils, "Worship style", "Contemporary");
+    expectRow(utils, "Distance from campus", "Within 5 miles");
+    expectRow(utils, "Notifications", "Off");
   });
 
-  test('4. [User Story 3: Favorites] toggles favorite status and filters saved churches', async () => {
-    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
-
-    // Login
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-    await findByPlaceholderText(SEARCH_PLACEHOLDER);
-
-    // Save Cathedral of St. Andrew (id: 1)
-    const favoriteBtn = getByTestId('favorite-button-1');
-    fireEvent.press(favoriteBtn);
-
-    // Toggle filter to show favorites only
-    const filterFavoritesBtn = getByTestId('btn-toggle-favorites');
-    fireEvent.press(filterFavoritesBtn);
-
-    // Cathedral of St. Andrew should remain, while non-favorite churches are hidden
-    expect(getByText('Cathedral of St. Andrew')).toBeTruthy();
-    expect(queryByText('Crossroads Bible Church')).toBeNull();
+  test("when rendered, then it has exactly the login, quiz and notification sections", () => {
+    const { getByText, queryByText } = renderAccount();
+    expect(getByText("Login")).toBeTruthy();
+    expect(getByText("Quiz Answers")).toBeTruthy();
+    expect(getByText("Notification Preferences")).toBeTruthy();
+    expect(queryByText("Email")).toBeNull();
+    expect(queryByText(/Saved churches/)).toBeNull();
   });
 
-  test('5. [User Story 3: Feedback] allows users to submit custom feedback on a church', async () => {
-    const { getByText, getByPlaceholderText, getByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
-
-    // Login
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-    await findByPlaceholderText(SEARCH_PLACEHOLDER);
-
-    // Open feedback input on Church 1
-    fireEvent.press(getByTestId('toggle-feedback-1'));
-
-    // Write and submit feedback
-    const feedbackInput = getByTestId('feedback-input-1');
-    fireEvent.changeText(feedbackInput, 'Great choir music on Sunday morning!');
-    fireEvent.press(getByTestId('submit-feedback-1'));
-
-    // Verify feedback is added to the UI
-    expect(getByText('• Great choir music on Sunday morning!')).toBeTruthy();
+  test("given a skipped quiz, when rendered, then preferences show Not set", () => {
+    const { getAllByText } = renderAccount({ quizAnswers: null });
+    expect(getAllByText(NOT_SET)).toHaveLength(3);
   });
 
-    test('5l. [Story 54: Edit comment] lets a user change an existing comment', async () => {
-    const { getByText, queryByText, getByPlaceholderText, getByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
-
-    // Login
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-    await findByPlaceholderText(SEARCH_PLACEHOLDER);
-
-    // Church 1 starts with one comment, so press Edit on it (comment number 0)
-    fireEvent.press(getByTestId('edit-feedback-1-0'));
-
-    // Change the text and save
-    fireEvent.changeText(getByTestId('edit-input-1'), 'Updated comment text');
-    fireEvent.press(getByTestId('save-edit-1'));
-
-    // The new text shows and the old text is gone
-    expect(getByText('• Updated comment text')).toBeTruthy();
-    expect(
-      queryByText('• Welcoming community with active young adult and college groups.')
-    ).toBeNull();
-  });
-
-  test('5m. [Story 54: Delete comment] lets a user delete an existing comment', async () => {
-    const { queryByText, getByPlaceholderText, getByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
-
-    // Login
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-    await findByPlaceholderText(SEARCH_PLACEHOLDER);
-
-    // The seeded comment is there at first
-    expect(
-      queryByText('• Welcoming community with active young adult and college groups.')
-    ).toBeTruthy();
-
-    // Delete it
-    fireEvent.press(getByTestId('delete-feedback-1-0'));
-
-    // It is gone
-    expect(
-      queryByText('• Welcoming community with active young adult and college groups.')
-    ).toBeNull();
-  });
-
-  test('5b. [User Story 28: Share] opens the share menu with the church info when Share is pressed', async () => {
-    const { getByPlaceholderText, getByTestId, findByPlaceholderText } = render(<HomeScreen />);
-
-    // Login
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-    await findByPlaceholderText(SEARCH_PLACEHOLDER);
-
-    // Every church card should expose a share button
-    expect(getByTestId('share-button-1')).toBeTruthy();
-    expect(getByTestId('share-button-2')).toBeTruthy();
-
-    // Pressing Share should open the native share menu with the church's info
-    fireEvent.press(getByTestId('share-button-1'));
-    expect(mockShare).toHaveBeenCalledTimes(1);
-
-    const sharedContent = mockShare.mock.calls[0][0];
-    expect(sharedContent.message).toContain('Cathedral of St. Andrew');
-    expect(sharedContent.message).toContain('Catholic');
-    expect(sharedContent.message).toContain('301 Sheldon Blvd SE');
-    expect(sharedContent.message).toContain('Sun 8:30 AM, 10:30 AM, 5:30 PM');
-  });
-
-  
-  // --- DIRECTORY FILTERS (User Stories 47 & 48) ---
-
-  test('5c. [User Story 47: Filter by denomination] shows only churches of the chosen denomination', async () => {
-    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
-
-    // Login
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-    await findByPlaceholderText(SEARCH_PLACEHOLDER);
-
-    // Pick Nondenominational
-    fireEvent.press(getByTestId('btn-denomination-Nondenominational'));
-
-    // Nondenominational churches stay, everything else is hidden
-    expect(getByText('Crossroads Bible Church')).toBeTruthy();
-    expect(getByText('Calvary Church')).toBeTruthy();
-    expect(getByText('Ada Bible Church (East Paris)')).toBeTruthy();
-    expect(queryByText('Cathedral of St. Andrew')).toBeNull();
-    expect(queryByText('Madison Square Church')).toBeNull();
-    expect(queryByText('Mayflower Congregational Church')).toBeNull();
-  });
-
-  test('5d. [User Story 48: Filter by worship style] shows only churches with the chosen worship style', async () => {
-    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
-
-    // Login
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-    await findByPlaceholderText(SEARCH_PLACEHOLDER);
-
-    // Pick Contemporary
-    fireEvent.press(getByTestId('btn-worship-Contemporary'));
-
-    // Contemporary churches stay, the others are hidden
-    expect(getByText('Crossroads Bible Church')).toBeTruthy();
-    expect(getByText('Madison Square Church')).toBeTruthy();
-    expect(getByText('Ada Bible Church (East Paris)')).toBeTruthy();
-    expect(queryByText('Cathedral of St. Andrew')).toBeNull();
-  });
-
-  test('5e. [User Story 47: Filter by denomination] pressing all clears the denomination filter', async () => {
-    const { getByText, getByPlaceholderText, getByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
-
-    // Login
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-    await findByPlaceholderText(SEARCH_PLACEHOLDER);
-
-    // Turn the filter on, then press All to turn it off
-    fireEvent.press(getByTestId('btn-denomination-Catholic'));
-    fireEvent.press(getByTestId('btn-denomination-All'));
-
-    // All churches are back
-    expect(getByText('Cathedral of St. Andrew')).toBeTruthy();
-    expect(getByText('Crossroads Bible Church')).toBeTruthy();
-    expect(getByText('Mayflower Congregational Church')).toBeTruthy();
-  });
-
-  test('5f. [User Stories 47 & 48] denomination and worship style filters work together', async () => {
-    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
-
-    // Login
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-    await findByPlaceholderText(SEARCH_PLACEHOLDER);
-
-    // Nondenominational AND Contemporary
-    fireEvent.press(getByTestId('btn-denomination-Nondenominational'));
-    fireEvent.press(getByTestId('btn-worship-Contemporary'));
-
-    // Only churches that match both stay
-    expect(getByText('Crossroads Bible Church')).toBeTruthy();
-    expect(getByText('Ada Bible Church (East Paris)')).toBeTruthy();
-    expect(queryByText('Calvary Church')).toBeNull();
-    expect(queryByText('Madison Square Church')).toBeNull();
-  });
-
-  
-  // --- DISTANCE FILTER (User Story 46) ---
-
-  test('5i. [User Story 46: Filter by distance] Within 3 mi shows only nearby churches', async () => {
-    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
-
-    // Login
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-    await findByPlaceholderText(SEARCH_PLACEHOLDER);
-
-    // Pick Within 3 mi
-    fireEvent.press(getByTestId('btn-distance-3'));
-
-    // 1.8, 2.3 and 3.0 miles stay. 3.8, 5.1 and 6.2 miles are hidden.
-    expect(getByText('Cathedral of St. Andrew')).toBeTruthy();
-    expect(getByText('Crossroads Bible Church')).toBeTruthy();
-    expect(getByText('Madison Square Church')).toBeTruthy();
-    expect(queryByText('Mayflower Congregational Church')).toBeNull();
-    expect(queryByText('Calvary Church')).toBeNull();
-    expect(queryByText('Ada Bible Church (East Paris)')).toBeNull();
-  });
-
-  test('5j. [User Story 46: Filter by distance] Within 5 mi, and Any distance brings everything back', async () => {
-    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
-
-    // Login
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-    await findByPlaceholderText(SEARCH_PLACEHOLDER);
-
-    // Pick Within 5 mi: Mayflower (3.8) is in, Calvary (5.1) is out
-    fireEvent.press(getByTestId('btn-distance-5'));
-    expect(getByText('Mayflower Congregational Church')).toBeTruthy();
-    expect(queryByText('Calvary Church')).toBeNull();
-    expect(queryByText('Ada Bible Church (East Paris)')).toBeNull();
-
-    // Any distance shows every church again
-    fireEvent.press(getByTestId('btn-distance-any'));
-    expect(getByText('Calvary Church')).toBeTruthy();
-    expect(getByText('Ada Bible Church (East Paris)')).toBeTruthy();
-  });
-
-  test('5k. [User Stories 46 & 47] distance and denomination filters work together', async () => {
-    const { getByText, getByPlaceholderText, queryByText, getByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
-
-    // Login
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-    await findByPlaceholderText(SEARCH_PLACEHOLDER);
-
-    // Nondenominational AND within 5 mi
-    fireEvent.press(getByTestId('btn-denomination-Nondenominational'));
-    fireEvent.press(getByTestId('btn-distance-5'));
-
-    // Only Crossroads (2.3 mi) matches both. Calvary is 5.1 mi and Ada is 6.2 mi.
-    expect(getByText('Crossroads Bible Church')).toBeTruthy();
-    expect(queryByText('Calvary Church')).toBeNull();
-    expect(queryByText('Ada Bible Church (East Paris)')).toBeNull();
-    expect(queryByText('Cathedral of St. Andrew')).toBeNull();
-  });
-    // --- NOTIFICATIONS SWITCH (User Stories 55 & 56) ---
-
-  test('5n. [User Stories 55 & 56: Notifications] switch turns notifications off and back on', async () => {
-    const { getByPlaceholderText, getByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
-
-    // Login
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
-    await findByPlaceholderText(SEARCH_PLACEHOLDER);
-
-    // The switch lives on the account page, not in the directory filters.
-    fireEvent.press(getByTestId("btn-account"));
-    const notificationSwitch = getByTestId("switch-notifications");
-
-    // Notifications start on
-    expect(notificationSwitch.props.value).toBe(true);
-
-    // Flip the switch to turn them off
-    fireEvent(notificationSwitch, "valueChange", false);
+  test("given notifications are off, when rendered, then the switch is off", () => {
+    const { getByTestId } = renderAccount();
     expect(getByTestId("switch-notifications").props.value).toBe(false);
+  });
 
-    // Flip it again to turn them back on
+  test("given notifications are on, when rendered, then the switch is on and reads On", () => {
+    const utils = renderAccount({ notificationsOn: true });
+    expect(utils.getByTestId("switch-notifications").props.value).toBe(true);
+    expectRow(utils, "Notifications", "On");
+  });
+
+  test("when the switch is flipped, then onNotificationsChange gets the new value", () => {
+    const onNotificationsChange = jest.fn();
+    const { getByTestId } = renderAccount({ onNotificationsChange });
     fireEvent(getByTestId("switch-notifications"), "valueChange", true);
-    expect(getByTestId("switch-notifications").props.value).toBe(true);
-  });
-  // --- HOW THE APP WORKS (User Story 62) ---
-
-  test('5g. [User Story 62: How it works] shows the steps when the button is pressed', () => {
-    const { getByText, getByTestId, queryByTestId } = render(<HomeScreen />);
-
-    // Steps are hidden at first
-    expect(queryByTestId('how-it-works-box')).toBeNull();
-    expect(getByText('How does this app work?')).toBeTruthy();
-
-    // Press the button to show the steps
-    fireEvent.press(getByTestId('btn-how-it-works'));
-
-    expect(getByTestId('how-it-works-box')).toBeTruthy();
-    expect(getByText(/Create an account or sign in/)).toBeTruthy();
-    expect(getByText(/See churches that match your answers/)).toBeTruthy();
-    expect(getByText('Hide how it works')).toBeTruthy();
+    expect(onNotificationsChange).toHaveBeenCalledTimes(1);
+    expect(onNotificationsChange).toHaveBeenCalledWith(true);
   });
 
-  test('5h. [User Story 62: How it works] pressing the button again hides the steps', () => {
-    const { getByTestId, queryByTestId } = render(<HomeScreen />);
-
-    // Show, then hide
-    fireEvent.press(getByTestId('btn-how-it-works'));
-    fireEvent.press(getByTestId('btn-how-it-works'));
-
-    expect(queryByTestId('how-it-works-box')).toBeNull();
+  test("when Return Home is pressed, then onReturnHome is called once", () => {
+    const onReturnHome = jest.fn();
+    const { getByTestId } = renderAccount({ onReturnHome });
+    fireEvent.press(getByTestId("btn-account-home"));
+    expect(onReturnHome).toHaveBeenCalledTimes(1);
   });
 
-  // --- SERVER CONNECTION ---
+  test("when Log Out is pressed, then onLogout is called once", () => {
+    const onLogout = jest.fn();
+    const { getByTestId } = renderAccount({ onLogout });
+    fireEvent.press(getByTestId("btn-account-logout"));
+    expect(onLogout).toHaveBeenCalledTimes(1);
+  });
+});
 
-  test('6. shows an error with Retry when the server is unreachable, and recovers on Retry', async () => {
-    mockGetChurches.mockRejectedValueOnce(new Error('Network request failed'));
-    jest.spyOn(console, 'error').mockImplementation(() => {}); // expected error, keep output clean
+describe("Account page in the app", () => {
+  test("when Account is pressed, then the account page replaces the current screen", async () => {
+    const utils = await signIn();
+    expect(utils.queryByTestId("account-screen")).toBeNull();
 
-    const { getByPlaceholderText, getByTestId, findByTestId, findByPlaceholderText } =
-      render(<HomeScreen />);
-    fireEvent.changeText(getByPlaceholderText('Username'), 'TestUser');
-    fireEvent.press(getByTestId('btn-auth'));
-    fireEvent.press(getByTestId('btn-skip-quiz'));
+    fireEvent.press(utils.getByTestId("btn-account"));
 
-    expect(await findByTestId('load-error')).toBeTruthy();
+    expect(utils.getByTestId("account-screen")).toBeTruthy();
+    expect(utils.queryByTestId("btn-submit-quiz")).toBeNull(); // quiz is gone
+    expect(utils.queryByText("Welcome, AccountUser!")).toBeNull(); // header is gone
+    expectRow(utils, "Username", "AccountUser");
+  });
 
-    fireEvent.press(getByTestId('btn-retry')); // second call uses the default: resolves with churches
-    expect(await findByPlaceholderText(SEARCH_PLACEHOLDER)).toBeTruthy();
-    expect(mockGetChurches).toHaveBeenCalledTimes(2);
+  test("given the quiz was submitted, when the account page opens, then it shows the answers", async () => {
+    const utils = await signIn();
+    fireEvent.press(utils.getByTestId("option-denomination-Christian Reformed"));
+    fireEvent.press(utils.getByTestId("option-worshipStyle-Contemporary"));
+    fireEvent.press(utils.getByTestId("option-maxDistance-5"));
+    fireEvent.press(utils.getByTestId("btn-submit-quiz"));
+
+    fireEvent.press(utils.getByTestId("btn-account"));
+    expectRow(utils, "Denomination", "Christian Reformed");
+    expectRow(utils, "Worship style", "Contemporary");
+    expectRow(utils, "Distance from campus", "Within 5 miles");
+  });
+
+  test("given the quiz was skipped, when the account page opens, then preferences show Not set", async () => {
+    const utils = await signIn();
+    fireEvent.press(utils.getByTestId("btn-skip-quiz"));
+    fireEvent.press(utils.getByTestId("btn-account"));
+    expect(utils.getAllByText(NOT_SET)).toHaveLength(3);
+  });
+
+  test("when Return Home is pressed, then the student is back on the directory", async () => {
+    const utils = await signIn();
+    fireEvent.press(utils.getByTestId("btn-account"));
+    fireEvent.press(utils.getByTestId("btn-account-home"));
+
+    expect(utils.queryByTestId("account-screen")).toBeNull();
+    expect(await utils.findByPlaceholderText(SEARCH_PLACEHOLDER)).toBeTruthy();
+    expect(utils.getByText("Welcome, AccountUser!")).toBeTruthy();
+  });
+
+  test("given saved churches, when the student goes to Account and back, then they stay saved", async () => {
+    const utils = await signIn();
+    fireEvent.press(utils.getByTestId("btn-skip-quiz"));
+    fireEvent.press(utils.getByTestId("favorite-button-1"));
+
+    fireEvent.press(utils.getByTestId("btn-account"));
+    fireEvent.press(utils.getByTestId("btn-account-home"));
+    fireEvent.press(utils.getByTestId("btn-toggle-favorites"));
+
+    expect(utils.getByText("Cathedral of St. Andrew")).toBeTruthy();
+    expect(utils.queryByText("Crossroads Bible Church")).toBeNull();
+  });
+
+  test("when Log Out is pressed on the account page, then the sign-in page shows", async () => {
+    const utils = await signIn();
+    fireEvent.press(utils.getByTestId("btn-account"));
+    fireEvent.press(utils.getByTestId("btn-account-logout"));
+
+    expect(utils.getByText("Find Your Community")).toBeTruthy();
+    expect(utils.queryByTestId("account-screen")).toBeNull();
+  });
+
+  test("given a log out from the account page, when someone signs in again, then they start at the quiz", async () => {
+    const utils = await signIn();
+    fireEvent.press(utils.getByTestId("btn-account"));
+    fireEvent.press(utils.getByTestId("btn-account-logout"));
+
+    fireEvent.changeText(utils.getByPlaceholderText("Username"), "NextStudent");
+    fireEvent.press(utils.getByTestId("btn-auth"));
+
+    expect(utils.getByTestId("btn-submit-quiz")).toBeTruthy();
+    fireEvent.press(utils.getByTestId("btn-account"));
+    expectRow(utils, "Username", "NextStudent");
+  });
+});
+
+describe("Notifications on the account page", () => {
+  // Signs in, skips the quiz and waits for the directory, so tests start where a student would.
+  const openDirectory = async () => {
+    const utils = await signIn();
+    fireEvent.press(utils.getByTestId("btn-skip-quiz"));
+    await utils.findByPlaceholderText(SEARCH_PLACEHOLDER);
+    return utils;
+  };
+
+  test("given the directory, when it renders, then there is no notifications control in the filters", async () => {
+    const utils = await openDirectory();
+    expect(utils.queryByTestId("btn-toggle-notifications")).toBeNull();
+    expect(utils.queryByTestId("switch-notifications")).toBeNull();
+    expect(utils.queryByText(/Notifications/)).toBeNull();
+  });
+
+  test("given a new sign-in, when the account page opens, then notifications are on", async () => {
+    const utils = await signIn();
+    fireEvent.press(utils.getByTestId("btn-account"));
+    expect(utils.getByTestId("switch-notifications").props.value).toBe(true);
+    expectRow(utils, "Notifications", "On");
+  });
+
+  test("when the switch is turned off, then the page reads Off", async () => {
+    const utils = await signIn();
+    fireEvent.press(utils.getByTestId("btn-account"));
+    fireEvent(utils.getByTestId("switch-notifications"), "valueChange", false);
+    expect(utils.getByTestId("switch-notifications").props.value).toBe(false);
+    expectRow(utils, "Notifications", "Off");
+  });
+
+  test("given notifications turned off, when the student goes home and back, then they stay off", async () => {
+    const utils = await signIn();
+    fireEvent.press(utils.getByTestId("btn-account"));
+    fireEvent(utils.getByTestId("switch-notifications"), "valueChange", false);
+
+    fireEvent.press(utils.getByTestId("btn-account-home"));
+    await utils.findByPlaceholderText(SEARCH_PLACEHOLDER);
+    fireEvent.press(utils.getByTestId("btn-account"));
+
+    expect(utils.getByTestId("switch-notifications").props.value).toBe(false);
+  });
+
+  test("given notifications turned off, when the student logs out and back in, then they are on again", async () => {
+    const utils = await signIn();
+    fireEvent.press(utils.getByTestId("btn-account"));
+    fireEvent(utils.getByTestId("switch-notifications"), "valueChange", false);
+    fireEvent.press(utils.getByTestId("btn-account-logout"));
+
+    fireEvent.changeText(utils.getByPlaceholderText("Username"), "NextStudent");
+    fireEvent.press(utils.getByTestId("btn-auth"));
+    fireEvent.press(utils.getByTestId("btn-account"));
+
+    expect(utils.getByTestId("switch-notifications").props.value).toBe(true);
   });
 });

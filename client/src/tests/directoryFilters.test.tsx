@@ -28,6 +28,7 @@ const DISTANCE_CHOICES: FilterOption<number | null>[] = [
 const openDirectory = async () => {
   const utils = render(<HomeScreen />);
   await act(async () => {}); // flush the resolved getChurches promise
+  fireEvent.press(utils.getByTestId("btn-continue"));
   fireEvent.changeText(utils.getByPlaceholderText("Username"), "FilterUser");
   fireEvent.press(utils.getByTestId("btn-auth"));
   fireEvent.press(utils.getByTestId("btn-skip-quiz"));

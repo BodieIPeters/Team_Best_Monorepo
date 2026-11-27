@@ -51,6 +51,9 @@ describe('Forgot password link on the sign-in screen (story #60)', () => {
     const { getByTestId, queryByTestId } = render(<HomeScreen />);
     await waitFor(() => expect(getChurches).toHaveBeenCalled());
 
+    // Welcome screen (story #37) comes first, so tap Continue to reach sign-in.
+    fireEvent.press(getByTestId('btn-continue'));
+
     fireEvent.press(getByTestId('btn-forgot-password'));
 
     expect(getByTestId('forgot-password')).toBeTruthy();
